@@ -163,6 +163,24 @@ export const IFRAME_BRIDGE_SCRIPT = `
     }
   }
 
+  function insertHTMLAtPoint(html, x, y) {
+    const target = document.elementFromPoint(x, y)?.closest('[data-he-id]') || document.body;
+    const wrap = document.createElement('div');
+    wrap.innerHTML = html;
+    const node = wrap.firstElementChild;
+    if (!node) return;
+    tagAll(wrap);
+    const rect = target.getBoundingClientRect();
+    const parent = target === document.body ? document.body : target.parentElement;
+    if (!parent) return;
+    const after = y > rect.top + rect.height / 2;
+    if (target === document.body) parent.appendChild(node);
+    else if (after) parent.insertBefore(node, target.nextSibling);
+    else parent.insertBefore(node, target);
+    markSelected(node);
+    postChange(node);
+  }
+
   function clearDrop() {
     clearMarkers('data-he-drop');
     dropLine.style.display = 'none';
@@ -477,6 +495,9 @@ export const IFRAME_BRIDGE_SCRIPT = `
 
     if (msg.type === 'he:externalDrag') {
       externalInsertHTML = msg.html || '';
+    }
+    if (msg.type === 'he:cmd:insertAtPoint') {
+      insertHTMLAtPoint(msg.html, msg.x, msg.y);
     }
 
     if (msg.type === 'he:cmd:setText') {

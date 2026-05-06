@@ -493,6 +493,23 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
   color: var(--text);
   border-color: var(--accent);
 }
+.shadow-builder {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.shadow-builder label {
+  display: grid;
+  grid-template-columns: 78px 1fr;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+.shadow-builder input[type="range"] {
+  padding: 0;
+}
 
 .btn-group {
   display: flex;

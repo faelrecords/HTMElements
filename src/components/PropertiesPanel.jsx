@@ -17,6 +17,15 @@ function parsePx(v) {
   return m ? m[1] : v
 }
 
+function hexToRgba(hex, opacity) {
+  const clean = String(hex || '#000000').replace('#', '')
+  const num = parseInt(clean.length === 3 ? clean.split('').map(x => x + x).join('') : clean, 16)
+  const r = (num >> 16) & 255
+  const g = (num >> 8) & 255
+  const b = num & 255
+  return `rgba(${r},${g},${b},${opacity})`
+}
+
 export default function PropertiesPanel({ iframeRef }) {
   const selectedId = useEditorStore(s => s.selectedId)
   const [info, setInfo] = useState(null)
@@ -26,6 +35,12 @@ export default function PropertiesPanel({ iframeRef }) {
   const [gradEnd, setGradEnd] = useState('#2BBF88')
   const [gradAngle, setGradAngle] = useState('135')
   const [shadowKind, setShadowKind] = useState('box')
+  const [shadowX, setShadowX] = useState('0')
+  const [shadowY, setShadowY] = useState('12')
+  const [shadowBlur, setShadowBlur] = useState('32')
+  const [shadowSpread, setShadowSpread] = useState('0')
+  const [shadowOpacity, setShadowOpacity] = useState('0.18')
+  const [shadowColor, setShadowColor] = useState('#000000')
   const showNotice = useEditorStore(s => s.showNotice)
 
   // recebe info quando o iframe envia
@@ -73,6 +88,14 @@ export default function PropertiesPanel({ iframeRef }) {
     if (shadowKind === 'text') setStyle({ textShadow: value })
     else setStyle({ boxShadow: value })
   }, [shadowKind, setStyle])
+
+  const applyCustomShadow = useCallback(() => {
+    const color = hexToRgba(shadowColor, shadowOpacity)
+    const value = shadowKind === 'text'
+      ? `${shadowX}px ${shadowY}px ${shadowBlur}px ${color}`
+      : `${shadowX}px ${shadowY}px ${shadowBlur}px ${shadowSpread}px ${color}`
+    applyShadow(value)
+  }, [applyShadow, shadowBlur, shadowColor, shadowKind, shadowOpacity, shadowSpread, shadowX, shadowY])
 
   if (!selectedId || !info) {
     return (
@@ -276,15 +299,6 @@ export default function PropertiesPanel({ iframeRef }) {
             ))}
           </div>
         </div>
-        <div className="props-row">
-          <span className="props-label">Sombra texto</span>
-          <input
-            type="text"
-            value={info.styles.textShadow || ''}
-            onChange={(e) => setStyle({ textShadow: e.target.value })}
-            placeholder="0 3px 12px rgba(0,0,0,.25)"
-          />
-        </div>
       </div>
 
       {/* fundo */}
@@ -431,6 +445,17 @@ export default function PropertiesPanel({ iframeRef }) {
         <div className="btn-group props-mode-group">
           <button className={shadowKind === 'box' ? 'active' : ''} onClick={() => setShadowKind('box')}>Caixa</button>
           <button className={shadowKind === 'text' ? 'active' : ''} onClick={() => setShadowKind('text')}>Texto</button>
+        </div>
+        <div className="shadow-builder">
+          <label>Cor <ColorField value={shadowColor} onChange={setShadowColor} /></label>
+          <label>X <input type="number" value={shadowX} onChange={(e) => setShadowX(e.target.value)} /></label>
+          <label>Y <input type="number" value={shadowY} onChange={(e) => setShadowY(e.target.value)} /></label>
+          <label>Suavidade <input type="range" min="0" max="100" value={shadowBlur} onChange={(e) => setShadowBlur(e.target.value)} /></label>
+          {shadowKind === 'box' && (
+            <label>Tamanho <input type="range" min="-40" max="80" value={shadowSpread} onChange={(e) => setShadowSpread(e.target.value)} /></label>
+          )}
+          <label>Opacidade <input type="range" min="0" max="1" step="0.01" value={shadowOpacity} onChange={(e) => setShadowOpacity(e.target.value)} /></label>
+          <button className="action-btn full-width" onClick={applyCustomShadow}>Aplicar sombra</button>
         </div>
         <div className="shadow-presets">
           {[

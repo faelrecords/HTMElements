@@ -38,7 +38,16 @@ export default function ElementsLibrary({ iframeRef }) {
                     e.dataTransfer.setData('text/html', item.html)
                     e.dataTransfer.setData('text/plain', item.label)
                   }}
-                  onDragEnd={() => {
+                  onDragEnd={(e) => {
+                    const rect = iframeRef.current?.getBoundingClientRect()
+                    const html = window.__heInsertHTML
+                    if (rect && html) {
+                      const x = e.clientX - rect.left
+                      const y = e.clientY - rect.top
+                      if (x >= 0 && y >= 0 && x <= rect.width && y <= rect.height) {
+                        iframeRef.current.contentWindow.postMessage({ type: 'he:cmd:insertAtPoint', html, x, y }, '*')
+                      }
+                    }
                     window.__heInsertHTML = null
                     localStorage.removeItem('htmelements:drag-html')
                     iframeRef.current?.contentWindow?.postMessage({ type: 'he:externalDrag', html: '' }, '*')
