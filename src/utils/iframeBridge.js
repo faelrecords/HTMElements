@@ -134,9 +134,9 @@ export const IFRAME_BRIDGE_SCRIPT = `
     el.style.setProperty('--he-selected-left', Math.round(rect.left) + 'px');
   }
 
-  function canDrop(dragged, target) {
+  function canDrop(dragged, target, insertHTML) {
     if (!target) return false;
-    if (!dragged && getInsertHTML()) return true;
+    if (!dragged && insertHTML) return true;
     if (!dragged || dragged === target) return false;
     if (dragged === document.body) return false;
     return !dragged.contains(target);
@@ -144,17 +144,19 @@ export const IFRAME_BRIDGE_SCRIPT = `
 
   function getInsertHTML() {
     try {
-      return parent.__heInsertHTML || '';
+      return parent.__heInsertHTML || parent.localStorage.getItem('htmelements:drag-html') || localStorage.getItem('htmelements:drag-html') || '';
     } catch {
-      return '';
+      try { return localStorage.getItem('htmelements:drag-html') || ''; } catch { return ''; }
     }
   }
 
   function clearInsertHTML() {
     try {
       parent.__heInsertHTML = null;
+      parent.localStorage.removeItem('htmelements:drag-html');
+      localStorage.removeItem('htmelements:drag-html');
     } catch {
-      // sem acesso ao parent.
+      try { localStorage.removeItem('htmelements:drag-html'); } catch {}
     }
   }
 
@@ -219,7 +221,8 @@ export const IFRAME_BRIDGE_SCRIPT = `
   document.addEventListener('dragover', (e) => {
     const target = e.target.closest('[data-he-id]');
     const dragged = getEl(draggedId);
-    if (!canDrop(dragged, target)) return;
+    const insertHTML = getInsertHTML() || e.dataTransfer.getData('text/html');
+    if (!canDrop(dragged, target, insertHTML)) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     clearDrop();
@@ -230,9 +233,9 @@ export const IFRAME_BRIDGE_SCRIPT = `
   document.addEventListener('drop', (e) => {
     const target = e.target.closest('[data-he-id]');
     const dragged = getEl(draggedId);
-    const insertHTML = getInsertHTML();
+    const insertHTML = getInsertHTML() || e.dataTransfer.getData('text/html');
     clearDrop();
-    if (!canDrop(dragged, target)) return;
+    if (!canDrop(dragged, target, insertHTML)) return;
     e.preventDefault();
     const state = dropState || getDropState(e, target);
     if (insertHTML) {
@@ -370,6 +373,7 @@ export const IFRAME_BRIDGE_SCRIPT = `
         borderStyle: cs.borderTopStyle,
         borderColor: rgbToHex(cs.borderTopColor),
         boxShadow: cs.boxShadow === 'none' ? '' : cs.boxShadow,
+        textShadow: cs.textShadow === 'none' ? '' : cs.textShadow,
       },
       inlineStyle: el.getAttribute('style') || ''
     };

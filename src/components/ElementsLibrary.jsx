@@ -32,12 +32,14 @@ export default function ElementsLibrary({ iframeRef }) {
                   draggable
                   onDragStart={(e) => {
                     window.__heInsertHTML = item.html
+                    localStorage.setItem('htmelements:drag-html', item.html)
                     e.dataTransfer.effectAllowed = 'copy'
                     e.dataTransfer.setData('text/html', item.html)
                     e.dataTransfer.setData('text/plain', item.label)
                   }}
                   onDragEnd={() => {
                     window.__heInsertHTML = null
+                    localStorage.removeItem('htmelements:drag-html')
                   }}
                   onClick={() => insert(item.html)}
                   title={`Adicionar ${item.label.toLowerCase()}`}

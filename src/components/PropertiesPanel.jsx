@@ -22,6 +22,10 @@ export default function PropertiesPanel({ iframeRef }) {
   const [info, setInfo] = useState(null)
   const [contentMode, setContentMode] = useState('text')
   const [bgMode, setBgMode] = useState('color')
+  const [gradStart, setGradStart] = useState('#6D71F0')
+  const [gradEnd, setGradEnd] = useState('#2BBF88')
+  const [gradAngle, setGradAngle] = useState('135')
+  const [shadowKind, setShadowKind] = useState('box')
   const showNotice = useEditorStore(s => s.showNotice)
 
   // recebe info quando o iframe envia
@@ -57,6 +61,18 @@ export default function PropertiesPanel({ iframeRef }) {
     send('he:cmd:setAttr', { name, value })
     setInfo(prev => prev ? { ...prev, [name + 'Attr']: value } : prev)
   }, [send])
+
+  const applyGradient = useCallback(() => {
+    setStyle({
+      backgroundColor: '',
+      backgroundImage: `linear-gradient(${gradAngle || 135}deg, ${gradStart}, ${gradEnd})`
+    })
+  }, [gradAngle, gradStart, gradEnd, setStyle])
+
+  const applyShadow = useCallback((value) => {
+    if (shadowKind === 'text') setStyle({ textShadow: value })
+    else setStyle({ boxShadow: value })
+  }, [shadowKind, setStyle])
 
   if (!selectedId || !info) {
     return (
@@ -165,6 +181,7 @@ export default function PropertiesPanel({ iframeRef }) {
             />
           </div>
           {isImg && (
+            <>
             <div className="props-row">
               <span className="props-label">Alt</span>
               <input
@@ -176,6 +193,21 @@ export default function PropertiesPanel({ iframeRef }) {
                 }}
               />
             </div>
+            <div className="props-row">
+              <span className="props-label">Arquivo</span>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (!file) return
+                  setInfo(prev => ({ ...prev, srcAttr: file.name }))
+                  send('he:cmd:setAttr', { name: 'src', value: file.name })
+                  showNotice('Imagem referenciada pelo nome')
+                }}
+              />
+            </div>
+            </>
           )}
           {isVideo && info.tag === 'video' && (
             <div className="props-hint">Selecione source dentro do vídeo para trocar URL.</div>
@@ -244,6 +276,15 @@ export default function PropertiesPanel({ iframeRef }) {
             ))}
           </div>
         </div>
+        <div className="props-row">
+          <span className="props-label">Sombra texto</span>
+          <input
+            type="text"
+            value={info.styles.textShadow || ''}
+            onChange={(e) => setStyle({ textShadow: e.target.value })}
+            placeholder="0 3px 12px rgba(0,0,0,.25)"
+          />
+        </div>
       </div>
 
       {/* fundo */}
@@ -271,16 +312,24 @@ export default function PropertiesPanel({ iframeRef }) {
           )}
         </div>
         {bgMode === 'gradient' && (
-          <div className="gradient-presets">
-            {[
-              'linear-gradient(135deg, #6d71f0, #2bbf88)',
-              'linear-gradient(135deg, #0f172a, #334155)',
-              'radial-gradient(circle at top, #ffffff, #e9fff5)',
-              'linear-gradient(180deg, #ffffff, #f1f5f9)'
-            ].map(v => (
-              <button key={v} style={{ backgroundImage: v }} onClick={() => setStyle({ backgroundImage: v, backgroundColor: '' })} title={v} />
-            ))}
-          </div>
+          <>
+            <div className="props-grid-3">
+              <ColorField value={gradStart} onChange={setGradStart} />
+              <ColorField value={gradEnd} onChange={setGradEnd} />
+              <input type="number" value={gradAngle} onChange={(e) => setGradAngle(e.target.value)} title="Ângulo" />
+            </div>
+            <button className="action-btn full-width" onClick={applyGradient}>Aplicar gradiente</button>
+            <div className="gradient-presets">
+              {[
+                'linear-gradient(135deg, #6d71f0, #2bbf88)',
+                'linear-gradient(135deg, #0f172a, #334155)',
+                'radial-gradient(circle at top, #ffffff, #e9fff5)',
+                'linear-gradient(180deg, #ffffff, #f1f5f9)'
+              ].map(v => (
+                <button key={v} style={{ backgroundImage: v }} onClick={() => setStyle({ backgroundImage: v, backgroundColor: '' })} title={v} />
+              ))}
+            </div>
+          </>
         )}
         <div className="props-row">
           <span className="props-label">Display</span>
@@ -374,10 +423,14 @@ export default function PropertiesPanel({ iframeRef }) {
           <span className="props-label">Sombra</span>
           <input
             type="text"
-            value={info.styles.boxShadow || ''}
-            onChange={(e) => setStyle({ boxShadow: e.target.value })}
+            value={shadowKind === 'text' ? (info.styles.textShadow || '') : (info.styles.boxShadow || '')}
+            onChange={(e) => applyShadow(e.target.value)}
             placeholder="0 10px 30px rgba(0,0,0,.12)"
           />
+        </div>
+        <div className="btn-group props-mode-group">
+          <button className={shadowKind === 'box' ? 'active' : ''} onClick={() => setShadowKind('box')}>Caixa</button>
+          <button className={shadowKind === 'text' ? 'active' : ''} onClick={() => setShadowKind('text')}>Texto</button>
         </div>
         <div className="shadow-presets">
           {[
@@ -385,8 +438,9 @@ export default function PropertiesPanel({ iframeRef }) {
             ['Média', '0 16px 40px rgba(15,23,42,.16)'],
             ['Forte', '0 24px 70px rgba(15,23,42,.24)'],
             ['Verde', '0 18px 44px rgba(43,191,136,.28)'],
+            ['Remover', ''],
           ].map(([label, value]) => (
-            <button key={label} onClick={() => setStyle({ boxShadow: value })}>{label}</button>
+            <button key={label} onClick={() => applyShadow(value)}>{label}</button>
           ))}
         </div>
       </div>
