@@ -97,6 +97,11 @@ export default function PropertiesPanel({ iframeRef }) {
     applyShadow(value)
   }, [applyShadow, shadowBlur, shadowColor, shadowKind, shadowOpacity, shadowSpread, shadowX, shadowY])
 
+  useEffect(() => {
+    if (!selectedId || !info) return
+    applyCustomShadow()
+  }, [shadowX, shadowY, shadowBlur, shadowSpread, shadowOpacity, shadowColor, shadowKind])
+
   if (!selectedId || !info) {
     return (
       <div className="props-empty">
@@ -448,8 +453,8 @@ export default function PropertiesPanel({ iframeRef }) {
         </div>
         <div className="shadow-builder">
           <label>Cor <ColorField value={shadowColor} onChange={setShadowColor} /></label>
-          <label>X <input type="number" value={shadowX} onChange={(e) => setShadowX(e.target.value)} /></label>
-          <label>Y <input type="number" value={shadowY} onChange={(e) => setShadowY(e.target.value)} /></label>
+          <label>X <input type="range" min="-100" max="100" value={shadowX} onChange={(e) => setShadowX(e.target.value)} /></label>
+          <label>Y <input type="range" min="-100" max="100" value={shadowY} onChange={(e) => setShadowY(e.target.value)} /></label>
           <label>Suavidade <input type="range" min="0" max="100" value={shadowBlur} onChange={(e) => setShadowBlur(e.target.value)} /></label>
           {shadowKind === 'box' && (
             <label>Tamanho <input type="range" min="-40" max="80" value={shadowSpread} onChange={(e) => setShadowSpread(e.target.value)} /></label>

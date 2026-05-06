@@ -499,6 +499,9 @@ export const IFRAME_BRIDGE_SCRIPT = `
     if (msg.type === 'he:cmd:insertAtPoint') {
       insertHTMLAtPoint(msg.html, msg.x, msg.y);
     }
+    if (msg.type === 'he:cmd:insertAtViewportCenter') {
+      insertHTMLAtPoint(msg.html, window.innerWidth / 2, window.innerHeight / 2);
+    }
 
     if (msg.type === 'he:cmd:setText') {
       const el = getEl(msg.id);
