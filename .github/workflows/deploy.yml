@@ -31,9 +31,8 @@ jobs:
 
       - name: Build
         env:
-          # Se o repo for "html-elements", o site fica em /html-elements/
-          # Ajuste se for hospedar em domínio próprio (deixe "/" nesse caso)
-          VITE_BASE_PATH: /${{ github.event.repository.name }}/
+          # Dominio custom do GitHub Pages usa raiz.
+          VITE_BASE_PATH: /
         run: npm run build
 
       - name: Upload artifact
