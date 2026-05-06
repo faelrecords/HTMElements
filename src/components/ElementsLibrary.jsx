@@ -33,6 +33,7 @@ export default function ElementsLibrary({ iframeRef }) {
                   onDragStart={(e) => {
                     window.__heInsertHTML = item.html
                     localStorage.setItem('htmelements:drag-html', item.html)
+                    iframeRef.current?.contentWindow?.postMessage({ type: 'he:externalDrag', html: item.html }, '*')
                     e.dataTransfer.effectAllowed = 'copy'
                     e.dataTransfer.setData('text/html', item.html)
                     e.dataTransfer.setData('text/plain', item.label)
@@ -40,6 +41,7 @@ export default function ElementsLibrary({ iframeRef }) {
                   onDragEnd={() => {
                     window.__heInsertHTML = null
                     localStorage.removeItem('htmelements:drag-html')
+                    iframeRef.current?.contentWindow?.postMessage({ type: 'he:externalDrag', html: '' }, '*')
                   }}
                   onClick={() => insert(item.html)}
                   title={`Adicionar ${item.label.toLowerCase()}`}

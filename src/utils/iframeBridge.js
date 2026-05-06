@@ -11,6 +11,8 @@ export const IFRAME_BRIDGE_SCRIPT = `
 
   let counter = 0;
   let draggedId = null;
+  let selectedId = null;
+  let externalInsertHTML = '';
   let dropState = null;
   const CONTAINER_TAGS = ['BODY', 'MAIN', 'SECTION', 'HEADER', 'FOOTER', 'NAV', 'ARTICLE', 'ASIDE'];
   function genId() {
@@ -128,6 +130,7 @@ export const IFRAME_BRIDGE_SCRIPT = `
 
   function markSelected(el) {
     clearMarkers('data-he-selected');
+    selectedId = el.getAttribute('data-he-id');
     el.setAttribute('data-he-selected', '');
     el.setAttribute('data-he-tag', el.tagName.toLowerCase());
     const rect = el.getBoundingClientRect();
@@ -221,7 +224,7 @@ export const IFRAME_BRIDGE_SCRIPT = `
   document.addEventListener('dragover', (e) => {
     const target = e.target.closest('[data-he-id]');
     const dragged = getEl(draggedId);
-    const insertHTML = getInsertHTML() || e.dataTransfer.getData('text/html');
+    const insertHTML = externalInsertHTML || getInsertHTML() || (Array.from(e.dataTransfer.types || []).includes('text/html') ? '<div></div>' : '');
     if (!canDrop(dragged, target, insertHTML)) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
@@ -233,7 +236,7 @@ export const IFRAME_BRIDGE_SCRIPT = `
   document.addEventListener('drop', (e) => {
     const target = e.target.closest('[data-he-id]');
     const dragged = getEl(draggedId);
-    const insertHTML = getInsertHTML() || e.dataTransfer.getData('text/html');
+    const insertHTML = externalInsertHTML || getInsertHTML() || e.dataTransfer.getData('text/html');
     clearDrop();
     if (!canDrop(dragged, target, insertHTML)) return;
     e.preventDefault();
@@ -247,6 +250,7 @@ export const IFRAME_BRIDGE_SCRIPT = `
       if (state.before) target.parentElement.insertBefore(node, target);
       else target.parentElement.insertBefore(node, target.nextSibling);
       clearInsertHTML();
+      externalInsertHTML = '';
       markSelected(node);
       postChange(node);
       return;
@@ -265,7 +269,26 @@ export const IFRAME_BRIDGE_SCRIPT = `
     if (dragged) dragged.removeAttribute('data-he-dragging');
     draggedId = null;
     clearInsertHTML();
+    externalInsertHTML = '';
     clearDrop();
+  }, true);
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Delete' && e.key !== 'Backspace') return;
+    const tag = e.target?.tagName?.toLowerCase();
+    if (tag === 'input' || tag === 'textarea' || tag === 'select' || e.target?.isContentEditable) return;
+    const el = getEl(selectedId);
+    if (!el || el === document.body) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const parentEl = el.parentElement;
+    el.remove();
+    selectedId = null;
+    clearMarkers('data-he-selected');
+    parent.postMessage({ type: 'he:select', id: null, info: null }, '*');
+    parent.postMessage({ type: 'he:changed' }, '*');
+    sendTree();
+    if (parentEl && parentEl !== document.body) markSelected(parentEl);
   }, true);
 
   // intercepta cliques em links pra evitar navegação
@@ -452,6 +475,10 @@ export const IFRAME_BRIDGE_SCRIPT = `
     const msg = e.data || {};
     if (!msg || !msg.type || !msg.type.startsWith('he:')) return;
 
+    if (msg.type === 'he:externalDrag') {
+      externalInsertHTML = msg.html || '';
+    }
+
     if (msg.type === 'he:cmd:setText') {
       const el = getEl(msg.id);
       if (el) {
@@ -556,7 +583,11 @@ export const IFRAME_BRIDGE_SCRIPT = `
       parent.postMessage({ type: 'he:changed' }, '*');
     }
     if (msg.type === 'he:cmd:select') {
-      if (!msg.id) return;
+      if (!msg.id) {
+        selectedId = null;
+        clearMarkers('data-he-selected');
+        return;
+      }
       const el = getEl(msg.id);
       if (el) {
         markSelected(el);
