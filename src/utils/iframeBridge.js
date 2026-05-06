@@ -135,9 +135,27 @@ export const IFRAME_BRIDGE_SCRIPT = `
   }
 
   function canDrop(dragged, target) {
-    if (!dragged || !target || dragged === target) return false;
+    if (!target) return false;
+    if (!dragged && getInsertHTML()) return true;
+    if (!dragged || dragged === target) return false;
     if (dragged === document.body) return false;
     return !dragged.contains(target);
+  }
+
+  function getInsertHTML() {
+    try {
+      return parent.__heInsertHTML || '';
+    } catch {
+      return '';
+    }
+  }
+
+  function clearInsertHTML() {
+    try {
+      parent.__heInsertHTML = null;
+    } catch {
+      // sem acesso ao parent.
+    }
   }
 
   function clearDrop() {
@@ -212,21 +230,38 @@ export const IFRAME_BRIDGE_SCRIPT = `
   document.addEventListener('drop', (e) => {
     const target = e.target.closest('[data-he-id]');
     const dragged = getEl(draggedId);
+    const insertHTML = getInsertHTML();
     clearDrop();
     if (!canDrop(dragged, target)) return;
     e.preventDefault();
     const state = dropState || getDropState(e, target);
+    if (insertHTML) {
+      const wrap = document.createElement('div');
+      wrap.innerHTML = insertHTML;
+      const node = wrap.firstElementChild;
+      if (!node || !target.parentElement) return;
+      tagAll(wrap);
+      if (state.before) target.parentElement.insertBefore(node, target);
+      else target.parentElement.insertBefore(node, target.nextSibling);
+      clearInsertHTML();
+      markSelected(node);
+      postChange(node);
+      return;
+    }
     if (state.before && target.parentElement) target.parentElement.insertBefore(dragged, target);
     else if (target.parentElement) target.parentElement.insertBefore(dragged, target.nextSibling);
-    dragged.removeAttribute('data-he-dragging');
-    markSelected(dragged);
-    postChange(dragged);
+    if (dragged) {
+      dragged.removeAttribute('data-he-dragging');
+      markSelected(dragged);
+      postChange(dragged);
+    }
   }, true);
 
   document.addEventListener('dragend', () => {
     const dragged = getEl(draggedId);
     if (dragged) dragged.removeAttribute('data-he-dragging');
     draggedId = null;
+    clearInsertHTML();
     clearDrop();
   }, true);
 
@@ -307,6 +342,8 @@ export const IFRAME_BRIDGE_SCRIPT = `
       styles: {
         color: rgbToHex(cs.color),
         backgroundColor: rgbToHex(cs.backgroundColor),
+        backgroundImage: cs.backgroundImage === 'none' ? '' : cs.backgroundImage,
+        background: inline.background || '',
         fontSize: cs.fontSize,
         fontWeight: cs.fontWeight,
         textAlign: cs.textAlign,
@@ -430,8 +467,12 @@ export const IFRAME_BRIDGE_SCRIPT = `
       const el = getEl(msg.id);
       if (el) {
         Object.entries(msg.styles).forEach(([k, v]) => {
-          if (v === '' || v === null || v === undefined) el.style.removeProperty(camelToKebab(k));
-          else el.style[k] = v;
+          const prop = camelToKebab(k);
+          if (v === '' || v === null || v === undefined) {
+            el.style.removeProperty(prop);
+          } else {
+            el.style.setProperty(prop, String(v), 'important');
+          }
         });
         postChange(el);
       }

@@ -7,6 +7,7 @@ import { useEditorStore } from '../store/editorStore'
 
 const TEXT_TAGS = ['h1','h2','h3','h4','h5','h6','p','span','a','button','li','strong','em','div','label']
 const IMG_TAGS = ['img']
+const VIDEO_TAGS = ['video', 'source']
 const LINK_TAGS = ['a']
 const BORDER_STYLES = ['none', 'solid', 'dashed', 'dotted', 'double']
 
@@ -20,6 +21,7 @@ export default function PropertiesPanel({ iframeRef }) {
   const selectedId = useEditorStore(s => s.selectedId)
   const [info, setInfo] = useState(null)
   const [contentMode, setContentMode] = useState('text')
+  const [bgMode, setBgMode] = useState('color')
   const showNotice = useEditorStore(s => s.showNotice)
 
   // recebe info quando o iframe envia
@@ -67,6 +69,7 @@ export default function PropertiesPanel({ iframeRef }) {
 
   const isText = TEXT_TAGS.includes(info.tag)
   const isImg = IMG_TAGS.includes(info.tag)
+  const isVideo = VIDEO_TAGS.includes(info.tag)
   const isLink = LINK_TAGS.includes(info.tag)
 
   return (
@@ -146,9 +149,9 @@ export default function PropertiesPanel({ iframeRef }) {
         </div>
       )}
 
-      {isImg && (
+      {(isImg || isVideo) && (
         <div className="props-section">
-          <div className="props-section-title">Imagem</div>
+          <div className="props-section-title">{isImg ? 'Imagem' : 'Vídeo'}</div>
           <div className="props-row">
             <span className="props-label">URL</span>
             <input
@@ -161,17 +164,22 @@ export default function PropertiesPanel({ iframeRef }) {
               placeholder="https://..."
             />
           </div>
-          <div className="props-row">
-            <span className="props-label">Alt</span>
-            <input
-              type="text"
-              value={info.altAttr || ''}
-              onChange={(e) => {
-                setInfo(prev => ({ ...prev, altAttr: e.target.value }))
-                send('he:cmd:setAttr', { name: 'alt', value: e.target.value })
-              }}
-            />
-          </div>
+          {isImg && (
+            <div className="props-row">
+              <span className="props-label">Alt</span>
+              <input
+                type="text"
+                value={info.altAttr || ''}
+                onChange={(e) => {
+                  setInfo(prev => ({ ...prev, altAttr: e.target.value }))
+                  send('he:cmd:setAttr', { name: 'alt', value: e.target.value })
+                }}
+              />
+            </div>
+          )}
+          {isVideo && info.tag === 'video' && (
+            <div className="props-hint">Selecione source dentro do vídeo para trocar URL.</div>
+          )}
         </div>
       )}
 
@@ -241,14 +249,39 @@ export default function PropertiesPanel({ iframeRef }) {
       {/* fundo */}
       <div className="props-section">
         <div className="props-section-title">Fundo</div>
-        <div className="props-row">
-          <span className="props-label">Cor</span>
-          <ColorField
-            value={info.styles.backgroundColor}
-            onChange={(v) => setStyle({ backgroundColor: v })}
-            allowTransparent
-          />
+        <div className="btn-group props-mode-group">
+          <button className={bgMode === 'color' ? 'active' : ''} onClick={() => setBgMode('color')}>Cor</button>
+          <button className={bgMode === 'gradient' ? 'active' : ''} onClick={() => setBgMode('gradient')}>Gradiente</button>
         </div>
+        <div className="props-row">
+          <span className="props-label">{bgMode === 'color' ? 'Cor' : 'CSS'}</span>
+          {bgMode === 'color' ? (
+            <ColorField
+              value={info.styles.backgroundColor}
+              onChange={(v) => setStyle({ backgroundColor: v, backgroundImage: '' })}
+              allowTransparent
+            />
+          ) : (
+            <input
+              type="text"
+              value={info.styles.backgroundImage || ''}
+              onChange={(e) => setStyle({ backgroundImage: e.target.value, backgroundColor: '' })}
+              placeholder="linear-gradient(135deg, #6d71f0, #2bbf88)"
+            />
+          )}
+        </div>
+        {bgMode === 'gradient' && (
+          <div className="gradient-presets">
+            {[
+              'linear-gradient(135deg, #6d71f0, #2bbf88)',
+              'linear-gradient(135deg, #0f172a, #334155)',
+              'radial-gradient(circle at top, #ffffff, #e9fff5)',
+              'linear-gradient(180deg, #ffffff, #f1f5f9)'
+            ].map(v => (
+              <button key={v} style={{ backgroundImage: v }} onClick={() => setStyle({ backgroundImage: v, backgroundColor: '' })} title={v} />
+            ))}
+          </div>
+        )}
         <div className="props-row">
           <span className="props-label">Display</span>
           <select
@@ -345,6 +378,16 @@ export default function PropertiesPanel({ iframeRef }) {
             onChange={(e) => setStyle({ boxShadow: e.target.value })}
             placeholder="0 10px 30px rgba(0,0,0,.12)"
           />
+        </div>
+        <div className="shadow-presets">
+          {[
+            ['Leve', '0 8px 24px rgba(15,23,42,.10)'],
+            ['Média', '0 16px 40px rgba(15,23,42,.16)'],
+            ['Forte', '0 24px 70px rgba(15,23,42,.24)'],
+            ['Verde', '0 18px 44px rgba(43,191,136,.28)'],
+          ].map(([label, value]) => (
+            <button key={label} onClick={() => setStyle({ boxShadow: value })}>{label}</button>
+          ))}
         </div>
       </div>
 

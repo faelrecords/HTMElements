@@ -68,6 +68,12 @@ export const ELEMENT_TEMPLATES = [
         html: '<video controls style="width:100%;max-width:720px;border-radius:12px;display:block;background:#111827;"><source src="" type="video/mp4"></video>',
       },
       {
+        id: 'media',
+        label: 'Imagem/Vídeo',
+        icon: ImageIcon,
+        html: '<figure style="margin:24px 0;max-width:760px;"><img src="https://placehold.co/900x520/e5e7eb/64748b?text=Imagem+ou+Video" alt="Mídia" style="width:100%;height:auto;border-radius:14px;display:block;"><figcaption style="font-size:13px;color:#64748b;margin-top:8px;text-align:center;">Legenda da mídia</figcaption></figure>',
+      },
+      {
         id: 'divider',
         label: 'Divisor',
         icon: Minus,
