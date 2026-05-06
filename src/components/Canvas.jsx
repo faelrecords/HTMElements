@@ -96,6 +96,8 @@ export default function Canvas({ iframeRef }) {
       clone.querySelectorAll('[data-he-tag]').forEach(el => el.removeAttribute('data-he-tag'))
       clone.querySelectorAll('[data-he-drop]').forEach(el => el.removeAttribute('data-he-drop'))
       clone.querySelectorAll('[data-he-dragging]').forEach(el => el.removeAttribute('data-he-dragging'))
+      clone.querySelectorAll('[data-he-container]').forEach(el => el.removeAttribute('data-he-container'))
+      clone.querySelectorAll('[data-he-ui]').forEach(el => el.remove())
       clone.querySelectorAll('[draggable="true"]').forEach(el => el.removeAttribute('draggable'))
       clone.querySelectorAll('[style*="--he-selected-left"]').forEach(el => el.style.removeProperty('--he-selected-left'))
       const html = '<!DOCTYPE html>\n' + clone.outerHTML

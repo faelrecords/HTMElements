@@ -11,6 +11,8 @@ export const IFRAME_BRIDGE_SCRIPT = `
 
   let counter = 0;
   let draggedId = null;
+  let dropState = null;
+  const CONTAINER_TAGS = ['BODY', 'MAIN', 'SECTION', 'HEADER', 'FOOTER', 'NAV', 'ARTICLE', 'ASIDE'];
   function genId() {
     counter += 1;
     return 'he-' + Date.now().toString(36) + '-' + counter.toString(36);
@@ -25,10 +27,18 @@ export const IFRAME_BRIDGE_SCRIPT = `
         el.setAttribute('data-he-id', genId());
       }
       if (el !== document.body) el.setAttribute('draggable', 'true');
+      if (isContainer(el)) el.setAttribute('data-he-container', '');
     });
     if (root === document.body && !root.hasAttribute('data-he-id')) {
       root.setAttribute('data-he-id', 'he-root');
     }
+    if (root === document.body) root.setAttribute('data-he-container', '');
+  }
+
+  function isContainer(el) {
+    if (!el || !el.tagName) return false;
+    if (CONTAINER_TAGS.includes(el.tagName)) return true;
+    return el.tagName === 'DIV' && el.children.length > 0;
   }
 
   tagAll(document.body);
@@ -41,6 +51,38 @@ export const IFRAME_BRIDGE_SCRIPT = `
     [data-he-selected] { outline: 2px solid #6d71f0 !important; outline-offset: -2px; position: relative; }
     [data-he-drop] { outline: 2px solid #27c08a !important; outline-offset: 3px; }
     [data-he-dragging] { opacity: .45 !important; }
+    [data-he-container] { outline: 1px dashed rgba(109,113,240,.22); outline-offset: -1px; }
+    [data-he-container]:hover { outline-color: rgba(109,113,240,.55); }
+    #__he_drop_line {
+      position: fixed;
+      z-index: 2147483646;
+      pointer-events: none;
+      background: #27c08a;
+      box-shadow: 0 0 0 2px rgba(39,192,138,.18);
+      display: none;
+    }
+    #__he_insert_button {
+      position: fixed;
+      z-index: 2147483647;
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      border: 2px solid #fff;
+      background: #6d71f0;
+      color: #fff;
+      font: 800 20px/20px -apple-system, sans-serif;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 10px 24px rgba(0,0,0,.24);
+    }
+    @media (max-width: 480px) {
+      html, body { max-width: 100% !important; overflow-x: hidden !important; }
+      img, video, iframe, table { max-width: 100% !important; }
+      [data-he-id] { max-width: 100% !important; }
+      h1, h2, h3, p, a, span, li, button { overflow-wrap: anywhere !important; word-break: normal !important; }
+    }
     [data-he-selected]::before {
       content: attr(data-he-tag);
       position: absolute;
@@ -61,6 +103,18 @@ export const IFRAME_BRIDGE_SCRIPT = `
     a[data-he-id] { pointer-events: auto; }
   \`;
   document.head.appendChild(style);
+
+  const dropLine = document.createElement('div');
+  dropLine.id = '__he_drop_line';
+  dropLine.setAttribute('data-he-ui', '');
+  document.body.appendChild(dropLine);
+
+  const insertButton = document.createElement('button');
+  insertButton.id = '__he_insert_button';
+  insertButton.type = 'button';
+  insertButton.textContent = '+';
+  insertButton.setAttribute('data-he-ui', '');
+  document.body.appendChild(insertButton);
 
   function getEl(id) { return document.querySelector('[data-he-id="' + id + '"]'); }
 
@@ -87,12 +141,57 @@ export const IFRAME_BRIDGE_SCRIPT = `
 
   function clearDrop() {
     clearMarkers('data-he-drop');
+    dropLine.style.display = 'none';
+    dropState = null;
+  }
+
+  function getDropState(e, target) {
+    const rect = target.getBoundingClientRect();
+    const parent = target.parentElement;
+    const pcs = parent ? getComputedStyle(parent) : null;
+    const horizontal = pcs && ((pcs.display.includes('flex') && (pcs.flexDirection || '').startsWith('row')) || pcs.display.includes('grid'));
+    const before = horizontal
+      ? e.clientX < rect.left + rect.width / 2
+      : e.clientY < rect.top + rect.height / 2;
+    return { target, before, horizontal, rect };
+  }
+
+  function showDropLine(state) {
+    const r = state.rect;
+    if (state.horizontal) {
+      dropLine.style.width = '3px';
+      dropLine.style.height = Math.max(24, r.height) + 'px';
+      dropLine.style.left = (state.before ? r.left : r.right) + 'px';
+      dropLine.style.top = r.top + 'px';
+    } else {
+      dropLine.style.width = Math.max(36, r.width) + 'px';
+      dropLine.style.height = '3px';
+      dropLine.style.left = r.left + 'px';
+      dropLine.style.top = (state.before ? r.top : r.bottom) + 'px';
+    }
+    dropLine.style.display = 'block';
+  }
+
+  function showInsertButton(el) {
+    if (!isContainer(el) || el === document.body) return hideInsertButton();
+    const r = el.getBoundingClientRect();
+    insertButton.dataset.targetId = el.getAttribute('data-he-id') || '';
+    insertButton.style.left = Math.max(8, r.left + r.width / 2 - 14) + 'px';
+    insertButton.style.top = Math.max(8, r.bottom - 14) + 'px';
+    insertButton.style.display = 'flex';
+  }
+
+  function hideInsertButton() {
+    insertButton.style.display = 'none';
+    insertButton.dataset.targetId = '';
   }
 
   document.addEventListener('dragstart', (e) => {
+    if (e.target.closest('[data-he-ui]')) return;
     const el = e.target.closest('[data-he-id]');
     if (!el || el === document.body) return;
     draggedId = el.getAttribute('data-he-id');
+    hideInsertButton();
     el.setAttribute('data-he-dragging', '');
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', draggedId);
@@ -105,7 +204,8 @@ export const IFRAME_BRIDGE_SCRIPT = `
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     clearDrop();
-    target.setAttribute('data-he-drop', '');
+    dropState = getDropState(e, target);
+    showDropLine(dropState);
   }, true);
 
   document.addEventListener('drop', (e) => {
@@ -114,9 +214,8 @@ export const IFRAME_BRIDGE_SCRIPT = `
     clearDrop();
     if (!canDrop(dragged, target)) return;
     e.preventDefault();
-    const rect = target.getBoundingClientRect();
-    const before = e.clientY < rect.top + rect.height / 2;
-    if (before && target.parentElement) target.parentElement.insertBefore(dragged, target);
+    const state = dropState || getDropState(e, target);
+    if (state.before && target.parentElement) target.parentElement.insertBefore(dragged, target);
     else if (target.parentElement) target.parentElement.insertBefore(dragged, target.nextSibling);
     dragged.removeAttribute('data-he-dragging');
     markSelected(dragged);
@@ -132,6 +231,7 @@ export const IFRAME_BRIDGE_SCRIPT = `
 
   // intercepta cliques em links pra evitar navegação
   document.addEventListener('click', (e) => {
+    if (e.target.closest('[data-he-ui]')) return;
     const el = e.target.closest('[data-he-id]');
     e.preventDefault();
     e.stopPropagation();
@@ -146,6 +246,7 @@ export const IFRAME_BRIDGE_SCRIPT = `
   }, true);
 
   document.addEventListener('mouseover', (e) => {
+    if (e.target.closest('[data-he-ui]')) return;
     const el = e.target.closest('[data-he-id]');
     if (!el) return;
     clearMarkers('data-he-hover');
@@ -153,12 +254,28 @@ export const IFRAME_BRIDGE_SCRIPT = `
       el.setAttribute('data-he-hover', '');
     }
     parent.postMessage({ type: 'he:hover', id: el.getAttribute('data-he-id') }, '*');
+    showInsertButton(el.closest('[data-he-container]'));
   }, true);
 
   document.addEventListener('mouseout', (e) => {
     clearMarkers('data-he-hover');
     parent.postMessage({ type: 'he:hover', id: null }, '*');
   }, true);
+
+  insertButton.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const target = getEl(insertButton.dataset.targetId);
+    if (!target || !target.parentElement) return;
+    const wrap = document.createElement('div');
+    wrap.innerHTML = '<section style="padding:56px 20px;background:#ffffff;"><div style="max-width:1120px;margin:0 auto;"><h2 style="font-size:32px;line-height:1.15;margin:0 0 12px;color:#0f172a;">Nova seção</h2><p style="font-size:16px;line-height:1.6;color:#64748b;margin:0;">Clique para editar este conteúdo.</p></div></section>';
+    const node = wrap.firstElementChild;
+    tagAll(wrap);
+    target.parentElement.insertBefore(node, target.nextSibling);
+    hideInsertButton();
+    markSelected(node);
+    postChange(node);
+  });
 
   // bloqueia submit e navegação
   document.addEventListener('submit', (e) => { e.preventDefault(); }, true);
@@ -415,6 +532,8 @@ export const IFRAME_BRIDGE_SCRIPT = `
       clone.querySelectorAll('[data-he-tag]').forEach(el => el.removeAttribute('data-he-tag'));
       clone.querySelectorAll('[data-he-drop]').forEach(el => el.removeAttribute('data-he-drop'));
       clone.querySelectorAll('[data-he-dragging]').forEach(el => el.removeAttribute('data-he-dragging'));
+      clone.querySelectorAll('[data-he-container]').forEach(el => el.removeAttribute('data-he-container'));
+      clone.querySelectorAll('[data-he-ui]').forEach(el => el.remove());
       clone.querySelectorAll('[draggable="true"]').forEach(el => el.removeAttribute('draggable'));
       clone.querySelectorAll('[style*="--he-selected-left"]').forEach(el => el.style.removeProperty('--he-selected-left'));
       const styleEl = clone.querySelector('#__he_editor_styles');
