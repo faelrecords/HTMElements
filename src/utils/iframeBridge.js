@@ -99,7 +99,8 @@ export const IFRAME_BRIDGE_SCRIPT = `
       text-transform: uppercase;
     }
     body { cursor: default; }
-    html { scrollbar-gutter: stable; }
+    html, body { scrollbar-width: none !important; }
+    html::-webkit-scrollbar, body::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
     a[data-he-id] { pointer-events: auto; }
   \`;
   document.head.appendChild(style);
