@@ -139,7 +139,6 @@ export default function Canvas({ iframeRef }) {
           ref={iframeRef}
           className={'canvas-frame ' + device}
           title="Editor canvas"
-          scrolling="no"
           sandbox="allow-same-origin allow-scripts allow-forms"
         />
       </div>
