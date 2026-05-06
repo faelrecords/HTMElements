@@ -467,8 +467,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
   font-size: 11px;
   line-height: 1.4;
 }
-.gradient-presets,
-.shadow-presets {
+.gradient-presets {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 6px;
@@ -478,20 +477,6 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
   height: 28px;
   border: 1px solid var(--border);
   border-radius: 6px;
-}
-.shadow-presets button {
-  min-height: 28px;
-  padding: 5px 6px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--surface-2);
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 650;
-}
-.shadow-presets button:hover {
-  color: var(--text);
-  border-color: var(--accent);
 }
 .shadow-builder {
   display: grid;

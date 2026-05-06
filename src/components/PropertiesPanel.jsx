@@ -460,18 +460,7 @@ export default function PropertiesPanel({ iframeRef }) {
             <label>Tamanho <input type="range" min="-40" max="80" value={shadowSpread} onChange={(e) => setShadowSpread(e.target.value)} /></label>
           )}
           <label>Opacidade <input type="range" min="0" max="1" step="0.01" value={shadowOpacity} onChange={(e) => setShadowOpacity(e.target.value)} /></label>
-          <button className="action-btn full-width" onClick={applyCustomShadow}>Aplicar sombra</button>
-        </div>
-        <div className="shadow-presets">
-          {[
-            ['Leve', '0 8px 24px rgba(15,23,42,.10)'],
-            ['Média', '0 16px 40px rgba(15,23,42,.16)'],
-            ['Forte', '0 24px 70px rgba(15,23,42,.24)'],
-            ['Verde', '0 18px 44px rgba(43,191,136,.28)'],
-            ['Remover', ''],
-          ].map(([label, value]) => (
-            <button key={label} onClick={() => applyShadow(value)}>{label}</button>
-          ))}
+          <button className="action-btn full-width" onClick={() => applyShadow('')}>Remover sombra</button>
         </div>
       </div>
 

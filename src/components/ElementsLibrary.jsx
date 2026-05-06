@@ -17,16 +17,6 @@ export default function ElementsLibrary({ iframeRef }) {
     showNotice('Elemento adicionado')
   }
 
-  function insertAtVisibleCenter(html) {
-    const iframe = iframeRef.current
-    if (!iframe) return
-    iframe.contentWindow.postMessage({
-      type: 'he:cmd:insertAtViewportCenter',
-      html
-    }, '*')
-    showNotice('Elemento adicionado')
-  }
-
   return (
     <div>
       {ELEMENT_TEMPLATES.map(group => (
@@ -62,7 +52,7 @@ export default function ElementsLibrary({ iframeRef }) {
                     localStorage.removeItem('htmelements:drag-html')
                     iframeRef.current?.contentWindow?.postMessage({ type: 'he:externalDrag', html: '' }, '*')
                   }}
-                  onClick={() => insertAtVisibleCenter(item.html)}
+                  onClick={() => insert(item.html)}
                   title={`Adicionar ${item.label.toLowerCase()}`}
                 >
                   <span className="lib-item-icon"><Icon size={20} /></span>
