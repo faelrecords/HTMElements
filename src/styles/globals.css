@@ -432,6 +432,16 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
   grid-template-columns: 1fr 1fr;
   gap: 8px;
 }
+.props-grid-2.compact {
+  margin-bottom: 12px;
+}
+.props-grid-2.compact label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
 .props-grid-4 {
   display: grid;
   grid-template-columns: repeat(4, 1fr);

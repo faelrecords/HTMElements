@@ -45,6 +45,54 @@ export const IFRAME_BRIDGE_SCRIPT = `
 
   tagAll(document.body);
 
+  if (!document.getElementById('__he_animation_styles')) {
+    const animationStyle = document.createElement('style');
+    animationStyle.id = '__he_animation_styles';
+    animationStyle.textContent = \`
+    @keyframes he-fade-in { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes he-fade-up { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes he-fade-down { from { opacity: 0; transform: translateY(-28px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes he-fade-left { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: translateX(0); } }
+    @keyframes he-fade-right { from { opacity: 0; transform: translateX(-28px); } to { opacity: 1; transform: translateX(0); } }
+    @keyframes he-slide-up { from { transform: translateY(36px); } to { transform: translateY(0); } }
+    @keyframes he-slide-down { from { transform: translateY(-36px); } to { transform: translateY(0); } }
+    @keyframes he-slide-left { from { transform: translateX(36px); } to { transform: translateX(0); } }
+    @keyframes he-slide-right { from { transform: translateX(-36px); } to { transform: translateX(0); } }
+    @keyframes he-zoom-in { from { opacity: 0; transform: scale(.82); } to { opacity: 1; transform: scale(1); } }
+    @keyframes he-zoom-out { from { opacity: 0; transform: scale(1.18); } to { opacity: 1; transform: scale(1); } }
+    @keyframes he-scale-up { from { transform: scale(.92); } to { transform: scale(1); } }
+    @keyframes he-scale-down { from { transform: scale(1.08); } to { transform: scale(1); } }
+    @keyframes he-rotate-in { from { opacity: 0; transform: rotate(-10deg) scale(.94); } to { opacity: 1; transform: rotate(0) scale(1); } }
+    @keyframes he-flip-x { from { opacity: 0; transform: perspective(900px) rotateX(80deg); } to { opacity: 1; transform: perspective(900px) rotateX(0); } }
+    @keyframes he-flip-y { from { opacity: 0; transform: perspective(900px) rotateY(80deg); } to { opacity: 1; transform: perspective(900px) rotateY(0); } }
+    @keyframes he-bounce { 0%,20%,53%,80%,100% { transform: translateY(0); } 40%,43% { transform: translateY(-24px); } 70% { transform: translateY(-12px); } 90% { transform: translateY(-4px); } }
+    @keyframes he-pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+    @keyframes he-shake { 0%,100% { transform: translateX(0); } 20%,60% { transform: translateX(-8px); } 40%,80% { transform: translateX(8px); } }
+    @keyframes he-swing { 20% { transform: rotate(10deg); } 40% { transform: rotate(-8deg); } 60% { transform: rotate(5deg); } 80% { transform: rotate(-3deg); } 100% { transform: rotate(0); } }
+    @keyframes he-wobble { 0%,100% { transform: translateX(0); } 15% { transform: translateX(-18px) rotate(-5deg); } 30% { transform: translateX(14px) rotate(3deg); } 45% { transform: translateX(-10px) rotate(-3deg); } 60% { transform: translateX(6px) rotate(2deg); } 75% { transform: translateX(-3px) rotate(-1deg); } }
+    @keyframes he-blur-in { from { opacity: 0; filter: blur(12px); } to { opacity: 1; filter: blur(0); } }
+    @keyframes he-blur-out { from { opacity: 1; filter: blur(0); } to { opacity: 0; filter: blur(12px); } }
+    @keyframes he-reveal-mask { from { opacity: 0; clip-path: inset(0 100% 0 0); } to { opacity: 1; clip-path: inset(0 0 0 0); } }
+    @keyframes he-typewriter { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+    @keyframes he-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+    @keyframes he-glow { 0%,100% { filter: drop-shadow(0 0 0 rgba(109,113,240,0)); } 50% { filter: drop-shadow(0 0 14px rgba(109,113,240,.75)); } }
+    @keyframes he-skew-in { from { opacity: 0; transform: skewX(-12deg) translateX(-24px); } to { opacity: 1; transform: skewX(0) translateX(0); } }
+    @keyframes he-elastic { 0% { transform: scale(.7); } 45% { transform: scale(1.12); } 70% { transform: scale(.96); } 100% { transform: scale(1); } }
+    @keyframes he-pop { 0% { opacity: 0; transform: scale(.6); } 70% { opacity: 1; transform: scale(1.08); } 100% { transform: scale(1); } }
+    [data-he-animation-trigger="hover"]:not(:hover) { animation-name: none !important; }
+    [data-he-animation-trigger="scroll"] { animation-play-state: paused !important; }
+    [data-he-animation-trigger="scroll"].he-animate-in-view { animation-play-state: running !important; }
+    \`;
+    document.head.appendChild(animationStyle);
+  }
+
+  if (!document.getElementById('__he_animation_runtime')) {
+    const animationRuntime = document.createElement('script');
+    animationRuntime.id = '__he_animation_runtime';
+    animationRuntime.textContent = "(() => { const run = () => { const io = new IntersectionObserver(entries => entries.forEach(entry => entry.target.classList.toggle('he-animate-in-view', entry.isIntersecting)), { threshold: 0.15 }); document.querySelectorAll('[data-he-animation-trigger=scroll]').forEach(el => io.observe(el)); }; if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run); else run(); })();";
+    document.head.appendChild(animationRuntime);
+  }
+
   // estilos do editor
   const style = document.createElement('style');
   style.id = '__he_editor_styles';
@@ -368,6 +416,18 @@ export const IFRAME_BRIDGE_SCRIPT = `
   // bloqueia submit e navegação
   document.addEventListener('submit', (e) => { e.preventDefault(); }, true);
 
+  const animationObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) entry.target.classList.add('he-animate-in-view');
+      else entry.target.classList.remove('he-animate-in-view');
+    });
+  }, { threshold: 0.15 });
+
+  function watchAnimations() {
+    document.querySelectorAll('[data-he-animation-trigger="scroll"]').forEach(el => animationObserver.observe(el));
+  }
+  watchAnimations();
+
   function getElementInfo(el) {
     const previousMarker = el.style.getPropertyValue('--he-selected-left');
     if (previousMarker) el.style.removeProperty('--he-selected-left');
@@ -383,7 +443,7 @@ export const IFRAME_BRIDGE_SCRIPT = `
       directText: getDirectText(el),
       hasChildren: el.children.length > 0,
       html: el.innerHTML || '',
-      classList: Array.from(el.classList).join(' '),
+      classList: Array.from(el.classList).filter(c => c !== 'he-animate-in-view').join(' '),
       idAttr: el.id || '',
       hrefAttr: el.getAttribute('href') || '',
       srcAttr: el.getAttribute('src') || '',
@@ -423,7 +483,15 @@ export const IFRAME_BRIDGE_SCRIPT = `
         borderColor: rgbToHex(cs.borderTopColor),
         boxShadow: cs.boxShadow === 'none' ? '' : cs.boxShadow,
         textShadow: cs.textShadow === 'none' ? '' : cs.textShadow,
+        animationName: cs.animationName === 'none' ? '' : cs.animationName,
+        animationDuration: cs.animationDuration,
+        animationDelay: cs.animationDelay,
+        animationTimingFunction: cs.animationTimingFunction,
+        animationIterationCount: cs.animationIterationCount,
+        animationDirection: cs.animationDirection,
+        animationFillMode: cs.animationFillMode,
       },
+      animationTriggerAttr: el.getAttribute('data-he-animation-trigger') || 'load',
       inlineStyle: el.getAttribute('style') || ''
     };
     if (previousMarker) el.style.setProperty('--he-selected-left', previousMarker);
@@ -520,6 +588,7 @@ export const IFRAME_BRIDGE_SCRIPT = `
       if (el) {
         el.textContent = msg.text;
         postChange(el);
+        watchAnimations();
       }
     }
     if (msg.type === 'he:cmd:setHtml') {
@@ -542,6 +611,7 @@ export const IFRAME_BRIDGE_SCRIPT = `
           }
         });
         postChange(el);
+        watchAnimations();
       }
     }
     if (msg.type === 'he:cmd:setAttr') {
@@ -550,6 +620,7 @@ export const IFRAME_BRIDGE_SCRIPT = `
         if (msg.value === '' || msg.value === null) el.removeAttribute(msg.name);
         else el.setAttribute(msg.name, msg.value);
         postChange(el);
+        watchAnimations();
       }
     }
     if (msg.type === 'he:cmd:setClass') {
@@ -648,6 +719,7 @@ export const IFRAME_BRIDGE_SCRIPT = `
       clone.querySelectorAll('[data-he-container]').forEach(el => el.removeAttribute('data-he-container'));
       clone.querySelectorAll('[data-he-ui]').forEach(el => el.remove());
       clone.querySelectorAll('[draggable="true"]').forEach(el => el.removeAttribute('draggable'));
+      clone.querySelectorAll('.he-animate-in-view').forEach(el => el.classList.remove('he-animate-in-view'));
       clone.querySelectorAll('[style*="--he-selected-left"]').forEach(el => el.style.removeProperty('--he-selected-left'));
       const styleEl = clone.querySelector('#__he_editor_styles');
       if (styleEl) styleEl.remove();

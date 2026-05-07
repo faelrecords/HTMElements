@@ -10,6 +10,18 @@ const IMG_TAGS = ['img']
 const VIDEO_TAGS = ['video', 'source']
 const LINK_TAGS = ['a']
 const BORDER_STYLES = ['none', 'solid', 'dashed', 'dotted', 'double']
+const ANIMATIONS = [
+  ['he-fade-in', 'Fade in'], ['he-fade-up', 'Fade up'], ['he-fade-down', 'Fade down'], ['he-fade-left', 'Fade left'], ['he-fade-right', 'Fade right'],
+  ['he-slide-up', 'Slide up'], ['he-slide-down', 'Slide down'], ['he-slide-left', 'Slide left'], ['he-slide-right', 'Slide right'],
+  ['he-zoom-in', 'Zoom in'], ['he-zoom-out', 'Zoom out'], ['he-scale-up', 'Scale up'], ['he-scale-down', 'Scale down'], ['he-rotate-in', 'Rotate in'],
+  ['he-flip-x', 'Flip X'], ['he-flip-y', 'Flip Y'], ['he-bounce', 'Bounce'], ['he-pulse', 'Pulse'], ['he-shake', 'Shake'], ['he-swing', 'Swing'],
+  ['he-wobble', 'Wobble'], ['he-blur-in', 'Blur in'], ['he-blur-out', 'Blur out'], ['he-reveal-mask', 'Reveal mask'], ['he-typewriter', 'Typewriter'],
+  ['he-float', 'Float'], ['he-glow', 'Glow'], ['he-skew-in', 'Skew in'], ['he-elastic', 'Elastic'], ['he-pop', 'Pop']
+]
+const EASINGS = [
+  ['ease', 'ease'], ['linear', 'linear'], ['ease-in', 'ease-in'], ['ease-out', 'ease-out'], ['ease-in-out', 'ease-in-out'],
+  ['cubic-bezier(.16,1,.3,1)', 'suave'], ['cubic-bezier(.68,-.55,.27,1.55)', 'elástico']
+]
 
 function parsePx(v) {
   if (!v) return ''
@@ -41,6 +53,7 @@ export default function PropertiesPanel({ iframeRef }) {
   const [shadowSpread, setShadowSpread] = useState('0')
   const [shadowOpacity, setShadowOpacity] = useState('0.18')
   const [shadowColor, setShadowColor] = useState('#000000')
+  const [animationTrigger, setAnimationTrigger] = useState('load')
   const showNotice = useEditorStore(s => s.showNotice)
 
   // recebe info quando o iframe envia
@@ -75,6 +88,12 @@ export default function PropertiesPanel({ iframeRef }) {
   const setAttr = useCallback((name, value) => {
     send('he:cmd:setAttr', { name, value })
     setInfo(prev => prev ? { ...prev, [name + 'Attr']: value } : prev)
+  }, [send])
+
+  const setAnimationTriggerAttr = useCallback((value) => {
+    setAnimationTrigger(value)
+    send('he:cmd:setAttr', { name: 'data-he-animation-trigger', value })
+    setInfo(prev => prev ? { ...prev, animationTriggerAttr: value } : prev)
   }, [send])
 
   const applyGradient = useCallback(() => {
@@ -516,6 +535,108 @@ export default function PropertiesPanel({ iframeRef }) {
             <SpacingField value={info.styles.marginLeft} onChange={v => setStyle({ marginLeft: v })} placeholder="L" />
           </div>
         </div>
+      </div>
+
+      <div className="props-section">
+        <div className="props-section-title">Animação</div>
+        <div className="props-row">
+          <span className="props-label">Tipo</span>
+          <select
+            value={info.styles.animationName || ''}
+            onChange={(e) => setStyle({
+              animationName: e.target.value,
+              animationDuration: info.styles.animationDuration || '700ms',
+              animationTimingFunction: info.styles.animationTimingFunction || 'ease',
+              animationFillMode: info.styles.animationFillMode || 'both'
+            })}
+          >
+            <option value="">sem animação</option>
+            {ANIMATIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+          </select>
+        </div>
+        <div className="props-grid-2 compact">
+          <label>
+            <span>Duração</span>
+            <input
+              type="text"
+              value={info.styles.animationDuration || ''}
+              onChange={(e) => setStyle({ animationDuration: e.target.value })}
+              placeholder="700ms"
+            />
+          </label>
+          <label>
+            <span>Delay</span>
+            <input
+              type="text"
+              value={info.styles.animationDelay || ''}
+              onChange={(e) => setStyle({ animationDelay: e.target.value })}
+              placeholder="0ms"
+            />
+          </label>
+        </div>
+        <div className="props-row">
+          <span className="props-label">Easing</span>
+          <select
+            value={info.styles.animationTimingFunction || ''}
+            onChange={(e) => setStyle({ animationTimingFunction: e.target.value })}
+          >
+            <option value="">auto</option>
+            {EASINGS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+          </select>
+        </div>
+        <div className="props-row">
+          <span className="props-label">Repetir</span>
+          <select
+            value={info.styles.animationIterationCount || ''}
+            onChange={(e) => setStyle({ animationIterationCount: e.target.value })}
+          >
+            <option value="">auto</option>
+            <option value="1">1 vez</option>
+            <option value="2">2 vezes</option>
+            <option value="3">3 vezes</option>
+            <option value="infinite">loop</option>
+          </select>
+        </div>
+        <div className="props-row">
+          <span className="props-label">Direção</span>
+          <select
+            value={info.styles.animationDirection || ''}
+            onChange={(e) => setStyle({ animationDirection: e.target.value })}
+          >
+            <option value="">normal</option>
+            <option value="reverse">reverse</option>
+            <option value="alternate">alternate</option>
+            <option value="alternate-reverse">alt reverse</option>
+          </select>
+        </div>
+        <div className="props-row">
+          <span className="props-label">Trigger</span>
+          <select
+            value={info.animationTriggerAttr || animationTrigger}
+            onChange={(e) => setAnimationTriggerAttr(e.target.value)}
+          >
+            <option value="load">ao carregar</option>
+            <option value="hover">hover</option>
+            <option value="scroll">scroll reveal</option>
+          </select>
+        </div>
+        <button
+          className="action-btn full-width"
+          onClick={() => {
+            setStyle({
+              animationName: '',
+              animationDuration: '',
+              animationDelay: '',
+              animationTimingFunction: '',
+              animationIterationCount: '',
+              animationDirection: '',
+              animationFillMode: ''
+            })
+            setAnimationTriggerAttr('')
+          }}
+        >
+          Remover animação
+        </button>
       </div>
 
       {/* atributos */}

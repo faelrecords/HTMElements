@@ -99,6 +99,7 @@ export default function Canvas({ iframeRef }) {
       clone.querySelectorAll('[data-he-container]').forEach(el => el.removeAttribute('data-he-container'))
       clone.querySelectorAll('[data-he-ui]').forEach(el => el.remove())
       clone.querySelectorAll('[draggable="true"]').forEach(el => el.removeAttribute('draggable'))
+      clone.querySelectorAll('.he-animate-in-view').forEach(el => el.classList.remove('he-animate-in-view'))
       clone.querySelectorAll('[style*="--he-selected-left"]').forEach(el => el.style.removeProperty('--he-selected-left'))
       const html = '<!DOCTYPE html>\n' + clone.outerHTML
       setHTML(html, { skipHistory: false, skipReload: true })
