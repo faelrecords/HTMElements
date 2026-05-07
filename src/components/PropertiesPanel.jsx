@@ -76,6 +76,8 @@ export default function PropertiesPanel({ iframeRef }) {
   const [shadowColor, setShadowColor] = useState('#000000')
   const [animationTrigger, setAnimationTrigger] = useState('load')
   const showNotice = useEditorStore(s => s.showNotice)
+  const styleClipboard = useEditorStore(s => s.styleClipboard)
+  const setStyleClipboard = useEditorStore(s => s.setStyleClipboard)
 
   // recebe info quando o iframe envia
   useEffect(() => {
@@ -185,6 +187,45 @@ export default function PropertiesPanel({ iframeRef }) {
           }
         }}>
           <Trash2 size={14} /> Deletar
+        </button>
+      </div>
+
+      <div className="action-row">
+        <button className="action-btn" onClick={() => {
+          setStyleClipboard({ ...(info.styles || {}) })
+          showNotice('Estilo copiado')
+        }}>
+          Copiar estilo
+        </button>
+        <button className="action-btn" disabled={!styleClipboard} onClick={() => {
+          if (!styleClipboard) return
+          setStyle(styleClipboard)
+          showNotice('Estilo colado')
+        }}>
+          Colar estilo
+        </button>
+        <button className="action-btn" onClick={() => {
+          send('he:cmd:setAttr', { name: 'style', value: '' })
+          showNotice('Estilo limpo')
+        }}>
+          Limpar estilo
+        </button>
+        <button className="action-btn" onClick={() => {
+          const next = info.lockedAttr === 'true' ? '' : 'true'
+          send('he:cmd:setAttr', { name: 'data-he-locked', value: next })
+          setInfo(prev => ({ ...prev, lockedAttr: next }))
+          showNotice(next ? 'Bloqueado' : 'Desbloqueado')
+        }}>
+          {info.lockedAttr === 'true' ? 'Desbloquear' : 'Bloquear'}
+        </button>
+        <button className="action-btn" onClick={() => setStyle({ display: info.styles.display === 'none' ? '' : 'none' })}>
+          {info.styles.display === 'none' ? 'Mostrar' : 'Ocultar'}
+        </button>
+        <button className="action-btn" onClick={() => {
+          navigator.clipboard?.writeText(info.outerHTML || info.html || '')
+          showNotice('HTML copiado')
+        }}>
+          Copiar HTML
         </button>
       </div>
 

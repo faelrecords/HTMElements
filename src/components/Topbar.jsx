@@ -31,6 +31,24 @@ export default function Topbar({ iframeRef, onReset, onBlank, onPreview }) {
     iframe.contentWindow.postMessage({ type: 'he:cmd:requestExport' }, '*')
   }
 
+  function handleSEO() {
+    const iframe = iframeRef.current
+    if (!iframe) return
+    const title = prompt('Title da página')
+    if (title === null) return
+    const description = prompt('Meta description') || ''
+    iframe.contentWindow.postMessage({ type: 'he:cmd:setSeo', title, description }, '*')
+    showNotice('SEO atualizado')
+  }
+
+  function handleGlobalCSS() {
+    const iframe = iframeRef.current
+    if (!iframe) return
+    const css = prompt('CSS global') || ''
+    iframe.contentWindow.postMessage({ type: 'he:cmd:setGlobalCss', css }, '*')
+    showNotice('CSS global aplicado')
+  }
+
   return (
     <header className="topbar">
       <div className="topbar-section">
@@ -59,6 +77,12 @@ export default function Topbar({ iframeRef, onReset, onBlank, onPreview }) {
         </button>
         <button className="btn" onClick={onPreview} title="Visualizar resultado">
           <Eye size={14} /> Preview
+        </button>
+        <button className="btn" onClick={handleSEO} title="Editar SEO">
+          SEO
+        </button>
+        <button className="btn" onClick={handleGlobalCSS} title="CSS global">
+          CSS
         </button>
         <button className={'btn ' + (codeOpen ? 'active' : '')} onClick={() => setCodeOpen(!codeOpen)} title="Editar HTML">
           <FileCode2 size={14} /> Código

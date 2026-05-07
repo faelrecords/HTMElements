@@ -33,6 +33,7 @@ export const useEditorStore = create((set, get) => ({
   history: [],                 // snapshots de loadedHTML
   historyIndex: -1,
   treeData: null,              // árvore de elementos {id, tag, label, children}
+  styleClipboard: null,
 
   setHTML(html, options = {}) {
     const state = get()
@@ -70,6 +71,7 @@ export const useEditorStore = create((set, get) => ({
   setDevice: (device) => set({ device }),
   setLeftTab: (leftTab) => set({ leftTab }),
   setCodeOpen: (codeOpen) => set({ codeOpen }),
+  setStyleClipboard: (styleClipboard) => set({ styleClipboard }),
 
   showNotice(text, ms = 2400) {
     set({ notice: text })

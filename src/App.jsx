@@ -46,6 +46,7 @@ export default function App() {
     clone.querySelectorAll('[data-he-drop]').forEach(el => el.removeAttribute('data-he-drop'))
     clone.querySelectorAll('[data-he-dragging]').forEach(el => el.removeAttribute('data-he-dragging'))
     clone.querySelectorAll('[data-he-container]').forEach(el => el.removeAttribute('data-he-container'))
+    clone.querySelectorAll('[data-he-locked]').forEach(el => el.removeAttribute('data-he-locked'))
     clone.querySelectorAll('[data-he-ui]').forEach(el => el.remove())
     clone.querySelectorAll('[draggable="true"]').forEach(el => el.removeAttribute('draggable'))
     clone.querySelectorAll('.he-animate-in-view').forEach(el => el.classList.remove('he-animate-in-view'))

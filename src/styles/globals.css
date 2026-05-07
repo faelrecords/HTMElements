@@ -566,6 +566,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 }
 .action-btn.full-width { width: 100%; margin-bottom: 8px; }
 .action-btn:hover { background: var(--surface-3); }
+.action-btn:disabled { opacity: .45; cursor: not-allowed; }
 .action-btn.danger:hover { background: rgba(240,109,109,0.12); border-color: var(--danger); color: var(--danger); }
 
 .props-empty {

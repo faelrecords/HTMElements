@@ -15,6 +15,7 @@ export const IFRAME_BRIDGE_SCRIPT = `
   let externalInsertHTML = '';
   let dropState = null;
   let absoluteDrag = null;
+  let resizeDrag = null;
   const CONTAINER_TAGS = ['BODY', 'MAIN', 'SECTION', 'HEADER', 'FOOTER', 'NAV', 'ARTICLE', 'ASIDE'];
   function genId() {
     counter += 1;
@@ -138,6 +139,19 @@ export const IFRAME_BRIDGE_SCRIPT = `
       cursor: pointer;
       box-shadow: 0 10px 24px rgba(0,0,0,.24);
     }
+    #__he_resize_handle {
+      position: fixed;
+      z-index: 2147483647;
+      width: 12px;
+      height: 12px;
+      border-radius: 4px;
+      border: 2px solid #fff;
+      background: #27c08a;
+      box-shadow: 0 8px 18px rgba(0,0,0,.24);
+      cursor: nwse-resize;
+      display: none;
+    }
+    [data-he-locked="true"] { outline-color: rgba(240,109,109,.8) !important; }
     @media (max-width: 480px) {
       html, body { max-width: 100% !important; overflow-x: hidden !important; }
       img, video, iframe, table { max-width: 100% !important; }
@@ -178,12 +192,18 @@ export const IFRAME_BRIDGE_SCRIPT = `
   insertButton.setAttribute('data-he-ui', '');
   document.body.appendChild(insertButton);
 
+  const resizeHandle = document.createElement('div');
+  resizeHandle.id = '__he_resize_handle';
+  resizeHandle.setAttribute('data-he-ui', '');
+  document.body.appendChild(resizeHandle);
+
   function getEl(id) { return document.querySelector('[data-he-id="' + id + '"]'); }
 
   function clearMarkers(attr) {
     document.querySelectorAll('[' + attr + ']').forEach(el => el.removeAttribute(attr));
     if (attr === 'data-he-selected') {
       document.querySelectorAll('[style*="--he-selected-left"]').forEach(el => el.style.removeProperty('--he-selected-left'));
+      resizeHandle.style.display = 'none';
     }
   }
 
@@ -194,6 +214,7 @@ export const IFRAME_BRIDGE_SCRIPT = `
     el.setAttribute('data-he-tag', el.tagName.toLowerCase());
     const rect = el.getBoundingClientRect();
     el.style.setProperty('--he-selected-left', Math.round(rect.left) + 'px');
+    showResizeHandle(el);
   }
 
   function canDrop(dragged, target, insertHTML) {
@@ -296,11 +317,29 @@ export const IFRAME_BRIDGE_SCRIPT = `
     insertButton.dataset.targetId = '';
   }
 
+  function showResizeHandle(el) {
+    if (!el || el === document.body) {
+      resizeHandle.style.display = 'none';
+      return;
+    }
+    const r = el.getBoundingClientRect();
+    resizeHandle.dataset.targetId = el.getAttribute('data-he-id') || '';
+    resizeHandle.style.left = Math.max(4, r.right - 6) + 'px';
+    resizeHandle.style.top = Math.max(4, r.bottom - 6) + 'px';
+    resizeHandle.style.display = 'block';
+  }
+
+  function snap(v) { return Math.round(v / 8) * 8; }
+
   document.addEventListener('dragstart', (e) => {
     if (e.target.closest('[data-he-ui]')) return;
     if (e.target.closest('[data-he-carousel-track]')) return;
     const el = e.target.closest('[data-he-id]');
     if (!el || el === document.body) return;
+    if (el.getAttribute('data-he-locked') === 'true') {
+      e.preventDefault();
+      return;
+    }
     const cs = getComputedStyle(el);
     if (cs.position === 'absolute' || cs.position === 'fixed') {
       e.preventDefault();
@@ -367,9 +406,19 @@ export const IFRAME_BRIDGE_SCRIPT = `
   }, true);
 
   document.addEventListener('pointerdown', (e) => {
+    if (e.target === resizeHandle) {
+      const el = getEl(resizeHandle.dataset.targetId);
+      if (!el || el === document.body) return;
+      const r = el.getBoundingClientRect();
+      resizeDrag = { el, startX: e.clientX, startY: e.clientY, width: r.width, height: r.height };
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
     if (e.button !== 0 || e.target.closest('[data-he-ui]')) return;
     const el = e.target.closest('[data-he-id]');
     if (!el || el === document.body || el.closest('[data-he-carousel-track]')) return;
+    if (el.getAttribute('data-he-locked') === 'true') return;
     const cs = getComputedStyle(el);
     if (cs.position !== 'absolute' && cs.position !== 'fixed') return;
     if (e.target.closest('input,textarea,select,button,a')) return;
@@ -398,10 +447,21 @@ export const IFRAME_BRIDGE_SCRIPT = `
     const dx = e.clientX - absoluteDrag.startX;
     const dy = e.clientY - absoluteDrag.startY;
     if (Math.abs(dx) + Math.abs(dy) > 2) absoluteDrag.moved = true;
-    absoluteDrag.el.style.setProperty('left', Math.round(absoluteDrag.startLeft + dx) + 'px', 'important');
-    absoluteDrag.el.style.setProperty('top', Math.round(absoluteDrag.startTop + dy) + 'px', 'important');
+    absoluteDrag.el.style.setProperty('left', snap(absoluteDrag.startLeft + dx) + 'px', 'important');
+    absoluteDrag.el.style.setProperty('top', snap(absoluteDrag.startTop + dy) + 'px', 'important');
     absoluteDrag.el.style.removeProperty('right');
     absoluteDrag.el.style.removeProperty('bottom');
+    showResizeHandle(absoluteDrag.el);
+    e.preventDefault();
+  }, true);
+
+  document.addEventListener('pointermove', (e) => {
+    if (!resizeDrag) return;
+    const w = Math.max(16, snap(resizeDrag.width + e.clientX - resizeDrag.startX));
+    const h = Math.max(16, snap(resizeDrag.height + e.clientY - resizeDrag.startY));
+    resizeDrag.el.style.setProperty('width', w + 'px', 'important');
+    resizeDrag.el.style.setProperty('height', h + 'px', 'important');
+    showResizeHandle(resizeDrag.el);
     e.preventDefault();
   }, true);
 
@@ -416,6 +476,16 @@ export const IFRAME_BRIDGE_SCRIPT = `
       e.preventDefault();
       e.stopPropagation();
     }
+  }, true);
+
+  document.addEventListener('pointerup', (e) => {
+    if (!resizeDrag) return;
+    const el = resizeDrag.el;
+    resizeDrag = null;
+    markSelected(el);
+    postChange(el);
+    e.preventDefault();
+    e.stopPropagation();
   }, true);
 
   document.addEventListener('keydown', (e) => {
@@ -524,6 +594,7 @@ export const IFRAME_BRIDGE_SCRIPT = `
       directText: getDirectText(el),
       hasChildren: el.children.length > 0,
       html: el.innerHTML || '',
+      outerHTML: el.outerHTML || '',
       classList: Array.from(el.classList).filter(c => c !== 'he-animate-in-view').join(' '),
       idAttr: el.id || '',
       hrefAttr: el.getAttribute('href') || '',
@@ -532,6 +603,7 @@ export const IFRAME_BRIDGE_SCRIPT = `
       titleAttr: el.getAttribute('title') || '',
       roleAttr: el.getAttribute('role') || '',
       ariaLabelAttr: el.getAttribute('aria-label') || '',
+      lockedAttr: el.getAttribute('data-he-locked') || '',
       styles: {
         color: rgbToHex(cs.color),
         backgroundColor: rgbToHex(cs.backgroundColor),
@@ -668,6 +740,27 @@ export const IFRAME_BRIDGE_SCRIPT = `
     }
     if (msg.type === 'he:cmd:insertAtViewportCenter') {
       insertHTMLAtPoint(msg.html, window.innerWidth / 2, window.innerHeight / 2);
+    }
+    if (msg.type === 'he:cmd:setSeo') {
+      document.title = msg.title || document.title;
+      let meta = document.querySelector('meta[name="description"]');
+      if (!meta) {
+        meta = document.createElement('meta');
+        meta.setAttribute('name', 'description');
+        document.head.appendChild(meta);
+      }
+      meta.setAttribute('content', msg.description || '');
+      parent.postMessage({ type: 'he:changed' }, '*');
+    }
+    if (msg.type === 'he:cmd:setGlobalCss') {
+      let globalStyle = document.querySelector('#he-global-css');
+      if (!globalStyle) {
+        globalStyle = document.createElement('style');
+        globalStyle.id = 'he-global-css';
+        document.head.appendChild(globalStyle);
+      }
+      globalStyle.textContent = msg.css || '';
+      parent.postMessage({ type: 'he:changed' }, '*');
     }
 
     if (msg.type === 'he:cmd:setText') {
@@ -842,7 +935,9 @@ export const IFRAME_BRIDGE_SCRIPT = `
       clone.querySelectorAll('[data-he-drop]').forEach(el => el.removeAttribute('data-he-drop'));
       clone.querySelectorAll('[data-he-dragging]').forEach(el => el.removeAttribute('data-he-dragging'));
       clone.querySelectorAll('[data-he-container]').forEach(el => el.removeAttribute('data-he-container'));
+      clone.querySelectorAll('[data-he-locked]').forEach(el => el.removeAttribute('data-he-locked'));
       clone.querySelectorAll('[data-he-ui]').forEach(el => el.remove());
+      clone.querySelectorAll('#__he_resize_handle').forEach(el => el.remove());
       clone.querySelectorAll('[draggable="true"]').forEach(el => el.removeAttribute('draggable'));
       clone.querySelectorAll('.he-animate-in-view').forEach(el => el.classList.remove('he-animate-in-view'));
       clone.querySelectorAll('.he-animation-preview').forEach(el => el.classList.remove('he-animation-preview'));
