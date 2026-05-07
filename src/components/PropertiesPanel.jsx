@@ -38,6 +38,21 @@ function hexToRgba(hex, opacity) {
   return `rgba(${r},${g},${b},${opacity})`
 }
 
+function parseSeconds(v, fallback = 0) {
+  if (!v) return fallback
+  const n = parseFloat(String(v).replace(',', '.'))
+  if (Number.isNaN(n)) return fallback
+  return String(v).includes('ms') ? n / 1000 : n
+}
+
+function secondsValue(v, fallback = 0) {
+  return Number(parseSeconds(v, fallback).toFixed(1))
+}
+
+function secondsCss(v) {
+  return `${Number(v).toFixed(1)}s`
+}
+
 export default function PropertiesPanel({ iframeRef }) {
   const selectedId = useEditorStore(s => s.selectedId)
   const [info, setInfo] = useState(null)
@@ -115,6 +130,10 @@ export default function PropertiesPanel({ iframeRef }) {
       : `${shadowX}px ${shadowY}px ${shadowBlur}px ${shadowSpread}px ${color}`
     applyShadow(value)
   }, [applyShadow, shadowBlur, shadowColor, shadowKind, shadowOpacity, shadowSpread, shadowX, shadowY])
+
+  const previewAnimation = useCallback(() => {
+    send('he:cmd:previewAnimation', {})
+  }, [send])
 
   useEffect(() => {
     if (!selectedId || !info) return
@@ -556,21 +575,25 @@ export default function PropertiesPanel({ iframeRef }) {
         </div>
         <div className="props-grid-2 compact">
           <label>
-            <span>Duração</span>
+            <span>Duração {secondsValue(info.styles.animationDuration, 0.7).toFixed(1)}s</span>
             <input
-              type="text"
-              value={info.styles.animationDuration || ''}
-              onChange={(e) => setStyle({ animationDuration: e.target.value })}
-              placeholder="700ms"
+              type="range"
+              min="0.1"
+              max="10"
+              step="0.1"
+              value={secondsValue(info.styles.animationDuration, 0.7)}
+              onChange={(e) => setStyle({ animationDuration: secondsCss(e.target.value) })}
             />
           </label>
           <label>
-            <span>Delay</span>
+            <span>Delay {secondsValue(info.styles.animationDelay, 0).toFixed(1)}s</span>
             <input
-              type="text"
-              value={info.styles.animationDelay || ''}
-              onChange={(e) => setStyle({ animationDelay: e.target.value })}
-              placeholder="0ms"
+              type="range"
+              min="0"
+              max="10"
+              step="0.1"
+              value={secondsValue(info.styles.animationDelay, 0)}
+              onChange={(e) => setStyle({ animationDelay: secondsCss(e.target.value) })}
             />
           </label>
         </div>
@@ -620,23 +643,26 @@ export default function PropertiesPanel({ iframeRef }) {
             <option value="scroll">scroll reveal</option>
           </select>
         </div>
-        <button
-          className="action-btn full-width"
-          onClick={() => {
-            setStyle({
-              animationName: '',
-              animationDuration: '',
-              animationDelay: '',
-              animationTimingFunction: '',
-              animationIterationCount: '',
-              animationDirection: '',
-              animationFillMode: ''
-            })
-            setAnimationTriggerAttr('')
-          }}
-        >
-          Remover animação
-        </button>
+        <div className="props-grid-2">
+          <button className="action-btn full-width" onClick={previewAnimation}>Preview</button>
+          <button
+            className="action-btn full-width"
+            onClick={() => {
+              setStyle({
+                animationName: '',
+                animationDuration: '',
+                animationDelay: '',
+                animationTimingFunction: '',
+                animationIterationCount: '',
+                animationDirection: '',
+                animationFillMode: ''
+              })
+              setAnimationTriggerAttr('')
+            }}
+          >
+            Remover
+          </button>
+        </div>
       </div>
 
       {/* atributos */}

@@ -82,6 +82,7 @@ export const IFRAME_BRIDGE_SCRIPT = `
     [data-he-animation-trigger="hover"]:not(:hover) { animation-name: none !important; }
     [data-he-animation-trigger="scroll"] { animation-play-state: paused !important; }
     [data-he-animation-trigger="scroll"].he-animate-in-view { animation-play-state: running !important; }
+    .he-animation-preview { animation-name: none !important; }
     \`;
     document.head.appendChild(animationStyle);
   }
@@ -623,6 +624,17 @@ export const IFRAME_BRIDGE_SCRIPT = `
         watchAnimations();
       }
     }
+    if (msg.type === 'he:cmd:previewAnimation') {
+      const el = getEl(msg.id);
+      if (el) {
+        el.classList.remove('he-animation-preview');
+        void el.offsetWidth;
+        el.classList.add('he-animation-preview');
+        requestAnimationFrame(() => {
+          el.classList.remove('he-animation-preview');
+        });
+      }
+    }
     if (msg.type === 'he:cmd:setClass') {
       const el = getEl(msg.id);
       if (el) {
@@ -720,6 +732,7 @@ export const IFRAME_BRIDGE_SCRIPT = `
       clone.querySelectorAll('[data-he-ui]').forEach(el => el.remove());
       clone.querySelectorAll('[draggable="true"]').forEach(el => el.removeAttribute('draggable'));
       clone.querySelectorAll('.he-animate-in-view').forEach(el => el.classList.remove('he-animate-in-view'));
+      clone.querySelectorAll('.he-animation-preview').forEach(el => el.classList.remove('he-animation-preview'));
       clone.querySelectorAll('[style*="--he-selected-left"]').forEach(el => el.style.removeProperty('--he-selected-left'));
       const styleEl = clone.querySelector('#__he_editor_styles');
       if (styleEl) styleEl.remove();
