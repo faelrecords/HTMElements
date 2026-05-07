@@ -418,7 +418,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
   display: flex;
   gap: 8px;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 }
 .props-row:last-child { margin-bottom: 0; }
 .props-label {
@@ -435,13 +435,13 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 .props-grid-4 {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
+  gap: 8px;
 }
 .props-grid-3 {
   display: grid;
   grid-template-columns: 1fr 1fr 72px;
-  gap: 6px;
-  margin-bottom: 8px;
+  gap: 8px;
+  margin-bottom: 12px;
 }
 .color-input {
   display: flex;
@@ -452,6 +452,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
   border-radius: var(--radius-sm);
   padding: 4px;
   flex: 1;
+  min-width: 0;
 }
 .color-input input[type="color"] {
   width: 28px; height: 24px;
@@ -471,8 +472,9 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 }
 .props-textarea { resize: vertical; min-height: 70px; font-family: var(--font-mono); font-size: 12px; }
 .props-textarea.mini { min-height: 52px; }
-.props-mode-group { margin-bottom: 8px; }
+.props-mode-group { margin-bottom: 12px; }
 .props-mode-group button { gap: 5px; min-height: 28px; }
+.props-mode-group + .props-row { margin-top: 2px; }
 .props-hint {
   margin-top: 6px;
   color: var(--warning);
@@ -482,8 +484,8 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 .gradient-presets {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
-  margin-top: 8px;
+  gap: 8px;
+  margin: 10px 0 14px;
 }
 .gradient-presets button {
   height: 28px;
@@ -492,8 +494,8 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 }
 .shadow-builder {
   display: grid;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: 10px;
+  margin-bottom: 12px;
 }
 .shadow-builder label {
   display: grid;
