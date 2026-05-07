@@ -14,6 +14,7 @@ export const IFRAME_BRIDGE_SCRIPT = `
   let selectedId = null;
   let externalInsertHTML = '';
   let dropState = null;
+  let absoluteDrag = null;
   const CONTAINER_TAGS = ['BODY', 'MAIN', 'SECTION', 'HEADER', 'FOOTER', 'NAV', 'ARTICLE', 'ASIDE'];
   function genId() {
     counter += 1;
@@ -108,7 +109,7 @@ export const IFRAME_BRIDGE_SCRIPT = `
   style.id = '__he_editor_styles';
   style.textContent = \`
     [data-he-hover] { outline: 2px dashed #6d71f0 !important; outline-offset: -2px; cursor: pointer !important; }
-    [data-he-selected] { outline: 2px solid #6d71f0 !important; outline-offset: -2px; position: relative; }
+    [data-he-selected] { outline: 2px solid #6d71f0 !important; outline-offset: -2px; }
     [data-he-drop] { outline: 2px solid #27c08a !important; outline-offset: 3px; }
     [data-he-dragging] { opacity: .45 !important; }
     [data-he-container] { outline: 1px dashed rgba(109,113,240,.22); outline-offset: -1px; }
@@ -300,6 +301,11 @@ export const IFRAME_BRIDGE_SCRIPT = `
     if (e.target.closest('[data-he-carousel-track]')) return;
     const el = e.target.closest('[data-he-id]');
     if (!el || el === document.body) return;
+    const cs = getComputedStyle(el);
+    if (cs.position === 'absolute' || cs.position === 'fixed') {
+      e.preventDefault();
+      return;
+    }
     draggedId = el.getAttribute('data-he-id');
     hideInsertButton();
     el.setAttribute('data-he-dragging', '');
@@ -358,6 +364,58 @@ export const IFRAME_BRIDGE_SCRIPT = `
     clearInsertHTML();
     externalInsertHTML = '';
     clearDrop();
+  }, true);
+
+  document.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0 || e.target.closest('[data-he-ui]')) return;
+    const el = e.target.closest('[data-he-id]');
+    if (!el || el === document.body || el.closest('[data-he-carousel-track]')) return;
+    const cs = getComputedStyle(el);
+    if (cs.position !== 'absolute' && cs.position !== 'fixed') return;
+    if (e.target.closest('input,textarea,select,button,a')) return;
+    const rect = el.getBoundingClientRect();
+    const parentRect = cs.position === 'fixed'
+      ? { left: 0, top: 0 }
+      : (el.offsetParent || document.body).getBoundingClientRect();
+    absoluteDrag = {
+      el,
+      position: cs.position,
+      startX: e.clientX,
+      startY: e.clientY,
+      startLeft: rect.left - parentRect.left,
+      startTop: rect.top - parentRect.top,
+      parentLeft: parentRect.left,
+      parentTop: parentRect.top,
+      moved: false
+    };
+    markSelected(el);
+    e.preventDefault();
+    e.stopPropagation();
+  }, true);
+
+  document.addEventListener('pointermove', (e) => {
+    if (!absoluteDrag) return;
+    const dx = e.clientX - absoluteDrag.startX;
+    const dy = e.clientY - absoluteDrag.startY;
+    if (Math.abs(dx) + Math.abs(dy) > 2) absoluteDrag.moved = true;
+    absoluteDrag.el.style.setProperty('left', Math.round(absoluteDrag.startLeft + dx) + 'px', 'important');
+    absoluteDrag.el.style.setProperty('top', Math.round(absoluteDrag.startTop + dy) + 'px', 'important');
+    absoluteDrag.el.style.removeProperty('right');
+    absoluteDrag.el.style.removeProperty('bottom');
+    e.preventDefault();
+  }, true);
+
+  document.addEventListener('pointerup', (e) => {
+    if (!absoluteDrag) return;
+    const el = absoluteDrag.el;
+    const moved = absoluteDrag.moved;
+    absoluteDrag = null;
+    if (moved) {
+      markSelected(el);
+      postChange(el);
+      e.preventDefault();
+      e.stopPropagation();
+    }
   }, true);
 
   document.addEventListener('keydown', (e) => {
