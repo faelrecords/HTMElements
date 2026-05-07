@@ -689,6 +689,9 @@ export const IFRAME_BRIDGE_SCRIPT = `
     if (msg.type === 'he:cmd:setStyle') {
       const el = getEl(msg.id);
       if (el) {
+        const beforeRect = el.getBoundingClientRect();
+        const beforeOffsetParent = el.offsetParent || document.body;
+        const beforeParentRect = beforeOffsetParent.getBoundingClientRect();
         Object.entries(msg.styles).forEach(([k, v]) => {
           const prop = camelToKebab(k);
           if (v === '' || v === null || v === undefined) {
@@ -697,6 +700,30 @@ export const IFRAME_BRIDGE_SCRIPT = `
             el.style.setProperty(prop, String(v), 'important');
           }
         });
+        if (Object.prototype.hasOwnProperty.call(msg.styles, 'position')) {
+          const nextPosition = msg.styles.position;
+          if (nextPosition === 'fixed') {
+            el.style.setProperty('top', Math.round(beforeRect.top) + 'px', 'important');
+            el.style.setProperty('left', Math.round(beforeRect.left) + 'px', 'important');
+            el.style.removeProperty('right');
+            el.style.removeProperty('bottom');
+          }
+          if (nextPosition === 'absolute') {
+            el.style.setProperty('top', Math.round(beforeRect.top - beforeParentRect.top) + 'px', 'important');
+            el.style.setProperty('left', Math.round(beforeRect.left - beforeParentRect.left) + 'px', 'important');
+            el.style.removeProperty('right');
+            el.style.removeProperty('bottom');
+          }
+          if (nextPosition === 'sticky') {
+            el.style.setProperty('top', el.style.top && el.style.top !== 'auto' ? el.style.top : '0px', 'important');
+            el.style.removeProperty('left');
+            el.style.removeProperty('right');
+            el.style.removeProperty('bottom');
+          }
+          if (!nextPosition) {
+            ['top', 'right', 'bottom', 'left', 'z-index'].forEach(prop => el.style.removeProperty(prop));
+          }
+        }
         postChange(el);
         watchAnimations();
       }
