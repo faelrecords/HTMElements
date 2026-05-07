@@ -96,6 +96,13 @@ export const IFRAME_BRIDGE_SCRIPT = `
     document.head.appendChild(animationRuntime);
   }
 
+  if (!document.getElementById('__he_carousel_runtime')) {
+    const carouselRuntime = document.createElement('script');
+    carouselRuntime.id = '__he_carousel_runtime';
+    carouselRuntime.textContent = "(() => { const page = track => Math.max(1, Math.round(track.clientWidth * .92)); const move = (root, dir) => { const track = root.querySelector('[data-he-carousel-track]'); if (track) track.scrollBy({ left: dir * page(track), behavior: 'smooth' }); }; document.addEventListener('click', e => { const prev = e.target.closest('[data-he-carousel-prev]'); const next = e.target.closest('[data-he-carousel-next]'); if (!prev && !next) return; e.preventDefault(); move(e.target.closest('[data-he-carousel]'), next ? 1 : -1); }, true); document.addEventListener('pointerdown', e => { const track = e.target.closest('[data-he-carousel-track]'); if (!track || e.target.closest('a,button,input,textarea,select')) return; let down = true, startX = e.clientX, startLeft = track.scrollLeft; track.setPointerCapture?.(e.pointerId); track.style.cursor = 'grabbing'; const onMove = ev => { if (!down) return; const dx = ev.clientX - startX; if (Math.abs(dx) > 3) ev.preventDefault(); track.scrollLeft = startLeft - dx; }; const end = () => { down = false; track.style.cursor = 'grab'; window.removeEventListener('pointermove', onMove, true); window.removeEventListener('pointerup', end, true); window.removeEventListener('pointercancel', end, true); }; window.addEventListener('pointermove', onMove, true); window.addEventListener('pointerup', end, true); window.addEventListener('pointercancel', end, true); }, true); })();";
+    document.head.appendChild(carouselRuntime);
+  }
+
   // estilos do editor
   const style = document.createElement('style');
   style.id = '__he_editor_styles';
@@ -225,7 +232,8 @@ export const IFRAME_BRIDGE_SCRIPT = `
     const parent = target === document.body ? document.body : target.parentElement;
     if (!parent) return;
     const after = y > rect.top + rect.height / 2;
-    if (target === document.body) parent.appendChild(node);
+    if (target.matches?.('[data-he-carousel-slide]')) target.appendChild(node);
+    else if (target === document.body) parent.appendChild(node);
     else if (after) parent.insertBefore(node, target.nextSibling);
     else parent.insertBefore(node, target);
     markSelected(node);
@@ -289,6 +297,7 @@ export const IFRAME_BRIDGE_SCRIPT = `
 
   document.addEventListener('dragstart', (e) => {
     if (e.target.closest('[data-he-ui]')) return;
+    if (e.target.closest('[data-he-carousel-track]')) return;
     const el = e.target.closest('[data-he-id]');
     if (!el || el === document.body) return;
     draggedId = el.getAttribute('data-he-id');
@@ -324,7 +333,8 @@ export const IFRAME_BRIDGE_SCRIPT = `
       const node = wrap.firstElementChild;
       if (!node || !target.parentElement) return;
       tagAll(wrap);
-      if (state.before) target.parentElement.insertBefore(node, target);
+      if (target.matches?.('[data-he-carousel-slide]')) target.appendChild(node);
+      else if (state.before) target.parentElement.insertBefore(node, target);
       else target.parentElement.insertBefore(node, target.nextSibling);
       clearInsertHTML();
       externalInsertHTML = '';
@@ -371,6 +381,16 @@ export const IFRAME_BRIDGE_SCRIPT = `
   // intercepta cliques em links pra evitar navegação
   document.addEventListener('click', (e) => {
     if (e.target.closest('[data-he-ui]')) return;
+    const prev = e.target.closest('[data-he-carousel-prev]');
+    const next = e.target.closest('[data-he-carousel-next]');
+    if (prev || next) {
+      e.preventDefault();
+      e.stopPropagation();
+      const root = e.target.closest('[data-he-carousel]');
+      const track = root?.querySelector('[data-he-carousel-track]');
+      if (track) track.scrollBy({ left: (next ? 1 : -1) * Math.max(1, Math.round(track.clientWidth * .92)), behavior: 'smooth' });
+      return;
+    }
     const el = e.target.closest('[data-he-id]');
     e.preventDefault();
     e.stopPropagation();
