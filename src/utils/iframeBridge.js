@@ -187,6 +187,14 @@ export const IFRAME_BRIDGE_SCRIPT = `
     dropState = null;
   }
 
+  function previewExternalPointer(x, y) {
+    const target = document.elementFromPoint(x, y)?.closest('[data-he-id]');
+    if (!target) return clearDrop();
+    clearDrop();
+    dropState = getDropState({ clientX: x, clientY: y }, target);
+    showDropLine(dropState);
+  }
+
   function getDropState(e, target) {
     const rect = target.getBoundingClientRect();
     const parent = target.parentElement;
@@ -495,6 +503,10 @@ export const IFRAME_BRIDGE_SCRIPT = `
 
     if (msg.type === 'he:externalDrag') {
       externalInsertHTML = msg.html || '';
+    }
+    if (msg.type === 'he:externalPointer') {
+      if (msg.active) previewExternalPointer(msg.x, msg.y);
+      else clearDrop();
     }
     if (msg.type === 'he:cmd:insertAtPoint') {
       insertHTMLAtPoint(msg.html, msg.x, msg.y);

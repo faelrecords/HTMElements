@@ -311,6 +311,18 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 }
 .lib-item:hover { background: var(--surface-3); border-color: var(--accent); transform: translateY(-1px); }
 .lib-item:active { cursor: grabbing; }
+.drag-ghost {
+  position: fixed;
+  z-index: 3000;
+  pointer-events: none;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  box-shadow: var(--shadow);
+}
 .lib-item-icon {
   width: 32px; height: 32px;
   display: flex; align-items: center; justify-content: center;
