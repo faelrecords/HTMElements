@@ -43,6 +43,7 @@ const W = {
   shape: '<div style="height:80px;background:linear-gradient(135deg,#6d71f0,#2bbf88);clip-path:polygon(0 0,100% 0,100% 55%,0 100%);"></div>',
   html: '<div><!-- HTML personalizado --></div>',
   css: '<style>/* CSS personalizado */</style>',
+  codepen: '<div data-he-codepen data-codepen-html="<h2>CodePen</h2><button class=&quot;demo-btn&quot;>Hover</button>" data-codepen-css="body{font-family:sans-serif;display:grid;place-items:center;min-height:100vh;background:#eef2ff}.demo-btn{padding:14px 24px;border:0;border-radius:999px;background:#6d71f0;color:#fff;font-weight:800;transition:.2s}.demo-btn:hover{transform:translateY(-3px);box-shadow:0 12px 30px rgba(109,113,240,.35)}" data-codepen-js="console.log(&quot;CodePen pronto&quot;)" style="display:block;width:100%;max-width:900px;height:420px;border:1px solid #dbe3ef;border-radius:14px;overflow:hidden;background:#fff;"><iframe title="CodePen importado" sandbox="allow-scripts allow-forms allow-popups allow-pointer-lock allow-same-origin" style="width:100%;height:100%;border:0;display:block;"></iframe></div>',
   shortcode: '<div data-shortcode="[shortcode]" style="padding:16px;border:1px dashed #94a3b8;border-radius:12px;color:#64748b;">[shortcode]</div>',
   whatsapp: '<a href="https://wa.me/5500000000000" style="display:inline-flex;align-items:center;gap:8px;padding:13px 20px;border-radius:999px;background:#25d366;color:#fff;text-decoration:none;font-weight:800;">WhatsApp</a>',
   social: '<div style="display:flex;gap:10px;"><a href="#" style="width:38px;height:38px;border-radius:999px;background:#0f172a;color:#fff;display:flex;align-items:center;justify-content:center;text-decoration:none;">f</a><a href="#" style="width:38px;height:38px;border-radius:999px;background:#0f172a;color:#fff;display:flex;align-items:center;justify-content:center;text-decoration:none;">in</a><a href="#" style="width:38px;height:38px;border-radius:999px;background:#0f172a;color:#fff;display:flex;align-items:center;justify-content:center;text-decoration:none;">x</a></div>',
@@ -125,6 +126,7 @@ export const ELEMENT_TEMPLATES = [
   { category: 'Avançado', items: [
     { id: 'html', label: 'HTML', icon: Code2, html: W.html },
     { id: 'css', label: 'CSS', icon: Code2, html: W.css },
+    { id: 'codepen', label: 'CodePen', icon: Code2, html: W.codepen },
     { id: 'shortcode', label: 'Shortcode', icon: Code2, html: W.shortcode },
     { id: 'marquee', label: 'Marquee', icon: Type, html: W.marquee },
   ]},

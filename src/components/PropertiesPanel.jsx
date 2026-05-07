@@ -333,6 +333,45 @@ export default function PropertiesPanel({ iframeRef }) {
         </div>
       )}
 
+      {info.isCodepen && (
+        <div className="props-section">
+          <div className="props-section-title">CodePen</div>
+          <div className="props-row stacked">
+            <span className="props-label">HTML</span>
+            <textarea
+              className="props-textarea codepen-code"
+              value={info.codepenHtmlAttr || ''}
+              onChange={(e) => {
+                setInfo(prev => ({ ...prev, codepenHtmlAttr: e.target.value }))
+                send('he:cmd:setAttr', { name: 'data-codepen-html', value: e.target.value })
+              }}
+            />
+          </div>
+          <div className="props-row stacked">
+            <span className="props-label">CSS</span>
+            <textarea
+              className="props-textarea codepen-code"
+              value={info.codepenCssAttr || ''}
+              onChange={(e) => {
+                setInfo(prev => ({ ...prev, codepenCssAttr: e.target.value }))
+                send('he:cmd:setAttr', { name: 'data-codepen-css', value: e.target.value })
+              }}
+            />
+          </div>
+          <div className="props-row stacked">
+            <span className="props-label">JS</span>
+            <textarea
+              className="props-textarea codepen-code"
+              value={info.codepenJsAttr || ''}
+              onChange={(e) => {
+                setInfo(prev => ({ ...prev, codepenJsAttr: e.target.value }))
+                send('he:cmd:setAttr', { name: 'data-codepen-js', value: e.target.value })
+              }}
+            />
+          </div>
+        </div>
+      )}
+
       {/* tipografia */}
       <div className="props-section">
         <div className="props-section-title">Tipografia</div>

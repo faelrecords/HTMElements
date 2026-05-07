@@ -37,6 +37,26 @@ export const IFRAME_BRIDGE_SCRIPT = `
       root.setAttribute('data-he-id', 'he-root');
     }
     if (root === document.body) root.setAttribute('data-he-container', '');
+    renderCodepens(root);
+  }
+
+  function codepenDoc(html, css, js) {
+    return '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>' + (css || '') + '</style></head><body>' + (html || '') + '<script>' + (js || '') + '<\\/script></body></html>';
+  }
+
+  function renderCodepens(root = document) {
+    root.querySelectorAll?.('[data-he-codepen]').forEach(el => {
+      let frame = el.querySelector('iframe');
+      if (!frame) {
+        frame = document.createElement('iframe');
+        frame.title = 'CodePen importado';
+        frame.setAttribute('sandbox', 'allow-scripts allow-forms allow-popups allow-pointer-lock allow-same-origin');
+        frame.style.cssText = 'width:100%;height:100%;border:0;display:block;';
+        el.appendChild(frame);
+      }
+      const doc = codepenDoc(el.getAttribute('data-codepen-html') || '', el.getAttribute('data-codepen-css') || '', el.getAttribute('data-codepen-js') || '');
+      if (frame.getAttribute('srcdoc') !== doc) frame.setAttribute('srcdoc', doc);
+    });
   }
 
   function isContainer(el) {
@@ -46,6 +66,7 @@ export const IFRAME_BRIDGE_SCRIPT = `
   }
 
   tagAll(document.body);
+  renderCodepens(document);
 
   if (!document.getElementById('__he_animation_styles')) {
     const animationStyle = document.createElement('style');
@@ -604,6 +625,10 @@ export const IFRAME_BRIDGE_SCRIPT = `
       roleAttr: el.getAttribute('role') || '',
       ariaLabelAttr: el.getAttribute('aria-label') || '',
       lockedAttr: el.getAttribute('data-he-locked') || '',
+      isCodepen: el.hasAttribute('data-he-codepen'),
+      codepenHtmlAttr: el.getAttribute('data-codepen-html') || '',
+      codepenCssAttr: el.getAttribute('data-codepen-css') || '',
+      codepenJsAttr: el.getAttribute('data-codepen-js') || '',
       styles: {
         color: rgbToHex(cs.color),
         backgroundColor: rgbToHex(cs.backgroundColor),
@@ -826,6 +851,7 @@ export const IFRAME_BRIDGE_SCRIPT = `
       if (el) {
         if (msg.value === '' || msg.value === null) el.removeAttribute(msg.name);
         else el.setAttribute(msg.name, msg.value);
+        if (msg.name && msg.name.startsWith('data-codepen-')) renderCodepens(document);
         postChange(el);
         watchAnimations();
       }
@@ -938,6 +964,10 @@ export const IFRAME_BRIDGE_SCRIPT = `
       clone.querySelectorAll('[data-he-locked]').forEach(el => el.removeAttribute('data-he-locked'));
       clone.querySelectorAll('[data-he-ui]').forEach(el => el.remove());
       clone.querySelectorAll('#__he_resize_handle').forEach(el => el.remove());
+      clone.querySelectorAll('[data-he-codepen]').forEach(el => {
+        const frame = el.querySelector('iframe');
+        if (frame) frame.setAttribute('srcdoc', codepenDoc(el.getAttribute('data-codepen-html') || '', el.getAttribute('data-codepen-css') || '', el.getAttribute('data-codepen-js') || ''));
+      });
       clone.querySelectorAll('[draggable="true"]').forEach(el => el.removeAttribute('draggable'));
       clone.querySelectorAll('.he-animate-in-view').forEach(el => el.classList.remove('he-animate-in-view'));
       clone.querySelectorAll('.he-animation-preview').forEach(el => el.classList.remove('he-animation-preview'));
