@@ -11,12 +11,13 @@ const VIDEO_TAGS = ['video', 'source']
 const LINK_TAGS = ['a']
 const BORDER_STYLES = ['none', 'solid', 'dashed', 'dotted', 'double']
 const ANIMATIONS = [
-  ['he-fade-in', 'Fade in'], ['he-fade-up', 'Fade up'], ['he-fade-down', 'Fade down'], ['he-fade-left', 'Fade left'], ['he-fade-right', 'Fade right'],
-  ['he-slide-up', 'Slide up'], ['he-slide-down', 'Slide down'], ['he-slide-left', 'Slide left'], ['he-slide-right', 'Slide right'],
-  ['he-zoom-in', 'Zoom in'], ['he-zoom-out', 'Zoom out'], ['he-scale-up', 'Scale up'], ['he-scale-down', 'Scale down'], ['he-rotate-in', 'Rotate in'],
-  ['he-flip-x', 'Flip X'], ['he-flip-y', 'Flip Y'], ['he-bounce', 'Bounce'], ['he-pulse', 'Pulse'], ['he-shake', 'Shake'], ['he-swing', 'Swing'],
-  ['he-wobble', 'Wobble'], ['he-blur-in', 'Blur in'], ['he-blur-out', 'Blur out'], ['he-reveal-mask', 'Reveal mask'], ['he-typewriter', 'Typewriter'],
-  ['he-float', 'Float'], ['he-glow', 'Glow'], ['he-skew-in', 'Skew in'], ['he-elastic', 'Elastic'], ['he-pop', 'Pop']
+  ['he-fade-in', 'Fade in', '0.7s', 'ease', '1'], ['he-fade-up', 'Fade up', '0.8s', 'cubic-bezier(.16,1,.3,1)', '1'], ['he-fade-down', 'Fade down', '0.8s', 'cubic-bezier(.16,1,.3,1)', '1'], ['he-fade-left', 'Fade left', '0.8s', 'cubic-bezier(.16,1,.3,1)', '1'], ['he-fade-right', 'Fade right', '0.8s', 'cubic-bezier(.16,1,.3,1)', '1'],
+  ['he-slide-up', 'Slide up', '0.7s', 'ease-out', '1'], ['he-slide-down', 'Slide down', '0.7s', 'ease-out', '1'], ['he-slide-left', 'Slide left', '0.7s', 'ease-out', '1'], ['he-slide-right', 'Slide right', '0.7s', 'ease-out', '1'],
+  ['he-zoom-in', 'Zoom in', '0.6s', 'cubic-bezier(.16,1,.3,1)', '1'], ['he-zoom-out', 'Zoom out', '0.6s', 'cubic-bezier(.16,1,.3,1)', '1'], ['he-scale-up', 'Scale up', '0.45s', 'ease-out', '1'], ['he-scale-down', 'Scale down', '0.45s', 'ease-out', '1'], ['he-rotate-in', 'Rotate in', '0.8s', 'cubic-bezier(.16,1,.3,1)', '1'],
+  ['he-flip-x', 'Flip X', '0.8s', 'ease-out', '1'], ['he-flip-y', 'Flip Y', '0.8s', 'ease-out', '1'], ['he-bounce', 'Bounce', '1s', 'ease', '1'], ['he-pulse', 'Pulse', '1.2s', 'ease-in-out', 'infinite'], ['he-shake', 'Shake', '0.7s', 'ease-in-out', '1'], ['he-swing', 'Swing', '1s', 'ease', '1'],
+  ['he-wobble', 'Wobble', '1s', 'ease', '1'], ['he-blur-in', 'Blur in', '0.8s', 'ease-out', '1'], ['he-blur-out', 'Blur out', '0.8s', 'ease-in', '1'], ['he-reveal-mask', 'Reveal mask', '0.9s', 'cubic-bezier(.16,1,.3,1)', '1'], ['he-typewriter', 'Typewriter', '2.8s', 'steps(32,end)', '1'],
+  ['he-float', 'Float', '3s', 'ease-in-out', 'infinite'], ['he-glow', 'Glow', '1.8s', 'ease-in-out', 'infinite'], ['he-skew-in', 'Skew in', '0.7s', 'ease-out', '1'], ['he-elastic', 'Elastic', '0.9s', 'cubic-bezier(.68,-.55,.27,1.55)', '1'], ['he-pop', 'Pop', '0.5s', 'ease-out', '1'],
+  ['he-spin', 'Girar infinito', '2s', 'linear', 'infinite']
 ]
 const EASINGS = [
   ['ease', 'ease'], ['linear', 'linear'], ['ease-in', 'ease-in'], ['ease-out', 'ease-out'], ['ease-in-out', 'ease-in-out'],
@@ -51,6 +52,11 @@ function secondsValue(v, fallback = 0) {
 
 function secondsCss(v) {
   return `${Number(v).toFixed(1)}s`
+}
+
+function animationPreset(name) {
+  const item = ANIMATIONS.find(([value]) => value === name)
+  return item ? { duration: item[2], easing: item[3], repeat: item[4] } : null
 }
 
 export default function PropertiesPanel({ iframeRef }) {
@@ -531,6 +537,36 @@ export default function PropertiesPanel({ iframeRef }) {
             onChange={(e) => setStyle({ opacity: e.target.value })}
           />
         </div>
+        <div className="props-row">
+          <span className="props-label">Posição</span>
+          <select value={info.styles.position || ''} onChange={(e) => setStyle({ position: e.target.value })}>
+            <option value="">auto</option>
+            <option value="relative">relative</option>
+            <option value="absolute">absolute</option>
+            <option value="fixed">fixed</option>
+            <option value="sticky">sticky</option>
+          </select>
+        </div>
+        <div className="props-row">
+          <span className="props-label">Z-index</span>
+          <input
+            type="number"
+            value={info.styles.zIndex === 'auto' ? '' : (info.styles.zIndex || '')}
+            onChange={(e) => setStyle({ zIndex: e.target.value })}
+            placeholder="auto"
+          />
+        </div>
+        {['absolute', 'fixed', 'sticky'].includes(info.styles.position) && (
+          <div className="props-row">
+            <span className="props-label">Offset</span>
+            <div className="props-grid-4">
+              <SpacingField value={info.styles.top === 'auto' ? '' : info.styles.top} onChange={v => setStyle({ top: v })} placeholder="T" allowNegative />
+              <SpacingField value={info.styles.right === 'auto' ? '' : info.styles.right} onChange={v => setStyle({ right: v })} placeholder="R" allowNegative />
+              <SpacingField value={info.styles.bottom === 'auto' ? '' : info.styles.bottom} onChange={v => setStyle({ bottom: v })} placeholder="B" allowNegative />
+              <SpacingField value={info.styles.left === 'auto' ? '' : info.styles.left} onChange={v => setStyle({ left: v })} placeholder="L" allowNegative />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* espaçamento */}
@@ -562,12 +598,16 @@ export default function PropertiesPanel({ iframeRef }) {
           <span className="props-label">Tipo</span>
           <select
             value={info.styles.animationName || ''}
-            onChange={(e) => setStyle({
-              animationName: e.target.value,
-              animationDuration: info.styles.animationDuration || '700ms',
-              animationTimingFunction: info.styles.animationTimingFunction || 'ease',
-              animationFillMode: info.styles.animationFillMode || 'both'
-            })}
+            onChange={(e) => {
+              const preset = animationPreset(e.target.value)
+              setStyle({
+                animationName: e.target.value,
+                animationDuration: preset?.duration || info.styles.animationDuration || '0.7s',
+                animationTimingFunction: preset?.easing || info.styles.animationTimingFunction || 'ease',
+                animationIterationCount: preset?.repeat || info.styles.animationIterationCount || '1',
+                animationFillMode: 'both'
+              })
+            }}
           >
             <option value="">sem animação</option>
             {ANIMATIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
@@ -759,11 +799,11 @@ function ColorField({ value, onChange, allowTransparent }) {
   )
 }
 
-function SpacingField({ value, onChange, placeholder }) {
+function SpacingField({ value, onChange, placeholder, allowNegative = false }) {
   return (
     <input
       type="number"
-      min="0"
+      min={allowNegative ? undefined : '0'}
       value={parsePx(value)}
       onChange={(e) => onChange(e.target.value === '' ? '' : e.target.value + 'px')}
       placeholder={placeholder}

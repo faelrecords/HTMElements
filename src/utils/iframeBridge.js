@@ -79,7 +79,9 @@ export const IFRAME_BRIDGE_SCRIPT = `
     @keyframes he-skew-in { from { opacity: 0; transform: skewX(-12deg) translateX(-24px); } to { opacity: 1; transform: skewX(0) translateX(0); } }
     @keyframes he-elastic { 0% { transform: scale(.7); } 45% { transform: scale(1.12); } 70% { transform: scale(.96); } 100% { transform: scale(1); } }
     @keyframes he-pop { 0% { opacity: 0; transform: scale(.6); } 70% { opacity: 1; transform: scale(1.08); } 100% { transform: scale(1); } }
+    @keyframes he-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     [data-he-animation-trigger="hover"]:not(:hover) { animation-name: none !important; }
+    [style*="he-typewriter"] { display: inline-block; overflow: hidden; white-space: nowrap; border-right: .08em solid currentColor; }
     [data-he-animation-trigger="scroll"] { animation-play-state: paused !important; }
     [data-he-animation-trigger="scroll"].he-animate-in-view { animation-play-state: running !important; }
     .he-animation-preview { animation-name: none !important; }
@@ -482,6 +484,12 @@ export const IFRAME_BRIDGE_SCRIPT = `
         borderWidth: cs.borderTopWidth,
         borderStyle: cs.borderTopStyle,
         borderColor: rgbToHex(cs.borderTopColor),
+        position: cs.position,
+        zIndex: cs.zIndex,
+        top: cs.top,
+        right: cs.right,
+        bottom: cs.bottom,
+        left: cs.left,
         boxShadow: cs.boxShadow === 'none' ? '' : cs.boxShadow,
         textShadow: cs.textShadow === 'none' ? '' : cs.textShadow,
         animationName: cs.animationName === 'none' ? '' : cs.animationName,
