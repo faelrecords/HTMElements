@@ -227,6 +227,15 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
   background: transparent;
   font-size: 12px;
 }
+.layers-breadcrumb {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.35;
+}
 .layer-item {
   display: flex;
   align-items: center;

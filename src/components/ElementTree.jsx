@@ -156,6 +156,11 @@ export default function ElementTree({ iframeRef }) {
           placeholder="Buscar camada"
         />
       </label>
+      {selectedId && (
+        <div className="layers-breadcrumb">
+          {flattenTree(tree, []).find(n => n.id === selectedId)?.breadcrumb || ''}
+        </div>
+      )}
       <TreeNode node={tree} depth={0} onSelect={selectNode} selectedId={selectedId} query={query} />
     </div>
   )

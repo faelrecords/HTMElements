@@ -1,11 +1,24 @@
 import { ELEMENT_TEMPLATES } from '../utils/elementTemplates'
 import { useEditorStore } from '../store/editorStore'
-import { useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { Code2 } from 'lucide-react'
+
+const SAVED_KEY = 'htmelements:saved-components:v1'
 
 export default function ElementsLibrary({ iframeRef }) {
   const selectedId = useEditorStore(s => s.selectedId)
   const showNotice = useEditorStore(s => s.showNotice)
   const ghostRef = useRef(null)
+  const [saved, setSaved] = useState([])
+
+  useEffect(() => {
+    const load = () => {
+      try { setSaved(JSON.parse(localStorage.getItem(SAVED_KEY) || '[]')) } catch { setSaved([]) }
+    }
+    load()
+    window.addEventListener('he:saved-components', load)
+    return () => window.removeEventListener('he:saved-components', load)
+  }, [])
 
   function insert(html) {
     const iframe = iframeRef.current
@@ -69,6 +82,26 @@ export default function ElementsLibrary({ iframeRef }) {
 
   return (
     <div>
+      {saved.length > 0 && (
+        <div>
+          <div className="lib-section-title">Salvos</div>
+          <div className="lib-grid">
+            {saved.map(item => (
+              <button
+                key={item.id}
+                className="lib-item"
+                draggable={false}
+                onPointerDown={(e) => startPointerDrag(e, { ...item, label: item.name })}
+                onClick={() => insert(item.html)}
+                title={`Adicionar ${item.name}`}
+              >
+                <span className="lib-item-icon"><Code2 size={20} /></span>
+                <span className="lib-item-label">{item.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       {ELEMENT_TEMPLATES.map(group => (
         <div key={group.category}>
           <div className="lib-section-title">{group.category}</div>

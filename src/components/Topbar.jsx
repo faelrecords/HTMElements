@@ -28,7 +28,8 @@ export default function Topbar({ iframeRef, onReset, onBlank, onPreview }) {
   function handleExport() {
     const iframe = iframeRef.current
     if (!iframe) return
-    iframe.contentWindow.postMessage({ type: 'he:cmd:requestExport' }, '*')
+    const cleanClasses = confirm('Remover classes e ids do HTML exportado?')
+    iframe.contentWindow.postMessage({ type: 'he:cmd:requestExport', cleanClasses }, '*')
   }
 
   function handleSEO() {
@@ -47,6 +48,37 @@ export default function Topbar({ iframeRef, onReset, onBlank, onPreview }) {
     const css = prompt('CSS global') || ''
     iframe.contentWindow.postMessage({ type: 'he:cmd:setGlobalCss', css }, '*')
     showNotice('CSS global aplicado')
+  }
+
+  function handleFont() {
+    const family = prompt('Google Font family', 'Inter')
+    if (!family) return
+    iframeRef.current?.contentWindow?.postMessage({ type: 'he:cmd:setGoogleFont', family }, '*')
+    showNotice('Fonte adicionada')
+  }
+
+  function handleColors() {
+    const primary = prompt('Cor primária', '#6D71F0') || '#6D71F0'
+    const secondary = prompt('Cor secundária', '#2BBF88') || '#2BBF88'
+    iframeRef.current?.contentWindow?.postMessage({ type: 'he:cmd:setColorVars', primary, secondary }, '*')
+    showNotice('Cores globais')
+  }
+
+  function handleFavicon() {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = 'image/svg+xml,image/png,image/x-icon'
+    input.onchange = () => {
+      const file = input.files?.[0]
+      if (!file) return
+      const reader = new FileReader()
+      reader.onload = () => {
+        iframeRef.current?.contentWindow?.postMessage({ type: 'he:cmd:setFavicon', href: reader.result }, '*')
+        showNotice('Favicon aplicado')
+      }
+      reader.readAsDataURL(file)
+    }
+    input.click()
   }
 
   return (
@@ -83,6 +115,15 @@ export default function Topbar({ iframeRef, onReset, onBlank, onPreview }) {
         </button>
         <button className="btn" onClick={handleGlobalCSS} title="CSS global">
           CSS
+        </button>
+        <button className="btn" onClick={handleFont} title="Google Fonts">
+          Fonte
+        </button>
+        <button className="btn" onClick={handleColors} title="Variáveis de cor">
+          Cores
+        </button>
+        <button className="btn" onClick={handleFavicon} title="Favicon">
+          Favicon
         </button>
         <button className={'btn ' + (codeOpen ? 'active' : '')} onClick={() => setCodeOpen(!codeOpen)} title="Editar HTML">
           <FileCode2 size={14} /> Código

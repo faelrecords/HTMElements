@@ -59,6 +59,16 @@ export const IFRAME_BRIDGE_SCRIPT = `
     });
   }
 
+  function upsertStyle(id, css) {
+    let styleEl = document.getElementById(id);
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = id;
+      document.head.appendChild(styleEl);
+    }
+    styleEl.textContent = css || '';
+  }
+
   function isContainer(el) {
     if (!el || !el.tagName) return false;
     if (CONTAINER_TAGS.includes(el.tagName)) return true;
@@ -367,6 +377,15 @@ export const IFRAME_BRIDGE_SCRIPT = `
       return;
     }
     draggedId = el.getAttribute('data-he-id');
+    if (e.altKey && el.parentElement) {
+      const clone = el.cloneNode(true);
+      clone.querySelectorAll('[data-he-id]').forEach(n => n.setAttribute('data-he-id', genId()));
+      clone.setAttribute('data-he-id', genId());
+      el.parentElement.insertBefore(clone, el.nextSibling);
+      draggedId = clone.getAttribute('data-he-id');
+      markSelected(clone);
+      postChange(clone);
+    }
     hideInsertButton();
     el.setAttribute('data-he-dragging', '');
     e.dataTransfer.effectAllowed = 'move';
@@ -721,6 +740,7 @@ export const IFRAME_BRIDGE_SCRIPT = `
       id: node.getAttribute('data-he-id'),
       tag: tag,
       label: getLabel(node),
+      breadcrumb: getBreadcrumb(node),
       children: []
     };
     Array.from(node.children).forEach(child => {
@@ -741,6 +761,16 @@ export const IFRAME_BRIDGE_SCRIPT = `
       if (c) return '.' + c;
     }
     return node.tagName.toLowerCase();
+  }
+
+  function getBreadcrumb(node) {
+    const parts = [];
+    let n = node;
+    while (n && n.nodeType === 1 && n !== document.documentElement) {
+      parts.unshift(getLabel(n));
+      n = n.parentElement;
+    }
+    return parts.join(' / ');
   }
 
   function sendTree() {
@@ -778,13 +808,34 @@ export const IFRAME_BRIDGE_SCRIPT = `
       parent.postMessage({ type: 'he:changed' }, '*');
     }
     if (msg.type === 'he:cmd:setGlobalCss') {
-      let globalStyle = document.querySelector('#he-global-css');
-      if (!globalStyle) {
-        globalStyle = document.createElement('style');
-        globalStyle.id = 'he-global-css';
-        document.head.appendChild(globalStyle);
+      upsertStyle('he-global-css', msg.css || '');
+      parent.postMessage({ type: 'he:changed' }, '*');
+    }
+    if (msg.type === 'he:cmd:setGoogleFont') {
+      const family = msg.family || 'Inter';
+      let link = document.querySelector('#he-google-font');
+      if (!link) {
+        link = document.createElement('link');
+        link.id = 'he-google-font';
+        link.rel = 'stylesheet';
+        document.head.appendChild(link);
       }
-      globalStyle.textContent = msg.css || '';
+      link.href = 'https://fonts.googleapis.com/css2?family=' + encodeURIComponent(family).replace(/%20/g, '+') + ':wght@300;400;500;600;700;800;900&display=swap';
+      document.body.style.setProperty('font-family', "'" + family + "', sans-serif", 'important');
+      parent.postMessage({ type: 'he:changed' }, '*');
+    }
+    if (msg.type === 'he:cmd:setColorVars') {
+      upsertStyle('he-color-vars', ':root{--he-primary:' + (msg.primary || '#6D71F0') + ';--he-secondary:' + (msg.secondary || '#2BBF88') + ';}');
+      parent.postMessage({ type: 'he:changed' }, '*');
+    }
+    if (msg.type === 'he:cmd:setFavicon') {
+      let link = document.querySelector('link[rel="icon"]');
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'icon';
+        document.head.appendChild(link);
+      }
+      link.href = msg.href || '';
       parent.postMessage({ type: 'he:changed' }, '*');
     }
 
@@ -854,6 +905,46 @@ export const IFRAME_BRIDGE_SCRIPT = `
         if (msg.name && msg.name.startsWith('data-codepen-')) renderCodepens(document);
         postChange(el);
         watchAnimations();
+      }
+    }
+    if (msg.type === 'he:cmd:setPseudoCss') {
+      const el = getEl(msg.id);
+      if (el) {
+        const id = el.getAttribute('data-he-id');
+        const hover = msg.hover ? '[data-he-id="' + id + '"]:hover{' + msg.hover + '}' : '';
+        const focus = msg.focus ? '[data-he-id="' + id + '"]:focus{' + msg.focus + '}' : '';
+        upsertStyle('he-pseudo-' + id, hover + focus);
+        parent.postMessage({ type: 'he:changed' }, '*');
+      }
+    }
+    if (msg.type === 'he:cmd:setResponsiveCss') {
+      const el = getEl(msg.id);
+      if (el) {
+        const id = el.getAttribute('data-he-id');
+        const tablet = msg.tablet ? '@media(max-width:1024px){[data-he-id="' + id + '"]{' + msg.tablet + '}}' : '';
+        const mobile = msg.mobile ? '@media(max-width:480px){[data-he-id="' + id + '"]{' + msg.mobile + '}}' : '';
+        upsertStyle('he-responsive-' + id, tablet + mobile);
+        parent.postMessage({ type: 'he:changed' }, '*');
+      }
+    }
+    if (msg.type === 'he:cmd:align') {
+      const el = getEl(msg.id);
+      if (el) {
+        el.style.setProperty('position', getComputedStyle(el).position === 'static' ? 'relative' : getComputedStyle(el).position, 'important');
+        if (msg.align === 'center-x') {
+          el.style.setProperty('left', '50%', 'important');
+          el.style.setProperty('transform', 'translateX(-50%)', 'important');
+        }
+        if (msg.align === 'center-y') {
+          el.style.setProperty('top', '50%', 'important');
+          el.style.setProperty('transform', 'translateY(-50%)', 'important');
+        }
+        if (msg.align === 'center') {
+          el.style.setProperty('left', '50%', 'important');
+          el.style.setProperty('top', '50%', 'important');
+          el.style.setProperty('transform', 'translate(-50%, -50%)', 'important');
+        }
+        postChange(el);
       }
     }
     if (msg.type === 'he:cmd:previewAnimation') {
@@ -972,6 +1063,10 @@ export const IFRAME_BRIDGE_SCRIPT = `
       clone.querySelectorAll('.he-animate-in-view').forEach(el => el.classList.remove('he-animate-in-view'));
       clone.querySelectorAll('.he-animation-preview').forEach(el => el.classList.remove('he-animation-preview'));
       clone.querySelectorAll('[style*="--he-selected-left"]').forEach(el => el.style.removeProperty('--he-selected-left'));
+      if (msg.cleanClasses) {
+        clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+        clone.querySelectorAll('[class]').forEach(el => el.removeAttribute('class'));
+      }
       const styleEl = clone.querySelector('#__he_editor_styles');
       if (styleEl) styleEl.remove();
       const scriptEl = clone.querySelector('#__he_editor_script');

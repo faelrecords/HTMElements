@@ -75,6 +75,10 @@ export default function PropertiesPanel({ iframeRef }) {
   const [shadowOpacity, setShadowOpacity] = useState('0.18')
   const [shadowColor, setShadowColor] = useState('#000000')
   const [animationTrigger, setAnimationTrigger] = useState('load')
+  const [hoverCss, setHoverCss] = useState('')
+  const [focusCss, setFocusCss] = useState('')
+  const [tabletCss, setTabletCss] = useState('')
+  const [mobileCss, setMobileCss] = useState('')
   const showNotice = useEditorStore(s => s.showNotice)
   const styleClipboard = useEditorStore(s => s.styleClipboard)
   const setStyleClipboard = useEditorStore(s => s.setStyleClipboard)
@@ -142,6 +146,21 @@ export default function PropertiesPanel({ iframeRef }) {
   const previewAnimation = useCallback(() => {
     send('he:cmd:previewAnimation', {})
   }, [send])
+
+  const saveComponent = useCallback(() => {
+    const name = prompt('Nome do componente')
+    if (!name) return
+    try {
+      const key = 'htmelements:saved-components:v1'
+      const items = JSON.parse(localStorage.getItem(key) || '[]')
+      items.unshift({ id: Date.now().toString(36), name, html: info.outerHTML || info.html || '' })
+      localStorage.setItem(key, JSON.stringify(items.slice(0, 30)))
+      window.dispatchEvent(new Event('he:saved-components'))
+      showNotice('Componente salvo')
+    } catch {
+      showNotice('Erro ao salvar')
+    }
+  }, [info, showNotice])
 
   useEffect(() => {
     if (!selectedId || !info) return
@@ -226,6 +245,9 @@ export default function PropertiesPanel({ iframeRef }) {
           showNotice('HTML copiado')
         }}>
           Copiar HTML
+        </button>
+        <button className="action-btn" onClick={saveComponent}>
+          Salvar comp.
         </button>
       </div>
 
@@ -647,6 +669,47 @@ export default function PropertiesPanel({ iframeRef }) {
             </div>
           </div>
         )}
+        <div className="props-grid-3">
+          <button className="action-btn" onClick={() => send('he:cmd:align', { align: 'center-x' })}>Centro X</button>
+          <button className="action-btn" onClick={() => send('he:cmd:align', { align: 'center-y' })}>Centro Y</button>
+          <button className="action-btn" onClick={() => send('he:cmd:align', { align: 'center' })}>Centro</button>
+        </div>
+      </div>
+
+      <div className="props-section">
+        <div className="props-section-title">Estados</div>
+        <div className="props-row stacked">
+          <span className="props-label">Hover CSS</span>
+          <textarea className="props-textarea mini" value={hoverCss} onChange={(e) => {
+            setHoverCss(e.target.value)
+            send('he:cmd:setPseudoCss', { hover: e.target.value, focus: focusCss })
+          }} placeholder="transform:scale(1.04); color:red;" />
+        </div>
+        <div className="props-row stacked">
+          <span className="props-label">Focus CSS</span>
+          <textarea className="props-textarea mini" value={focusCss} onChange={(e) => {
+            setFocusCss(e.target.value)
+            send('he:cmd:setPseudoCss', { hover: hoverCss, focus: e.target.value })
+          }} placeholder="outline:2px solid blue;" />
+        </div>
+      </div>
+
+      <div className="props-section">
+        <div className="props-section-title">Responsivo</div>
+        <div className="props-row stacked">
+          <span className="props-label">Tablet CSS</span>
+          <textarea className="props-textarea mini" value={tabletCss} onChange={(e) => {
+            setTabletCss(e.target.value)
+            send('he:cmd:setResponsiveCss', { tablet: e.target.value, mobile: mobileCss })
+          }} placeholder="font-size:32px;" />
+        </div>
+        <div className="props-row stacked">
+          <span className="props-label">Mobile CSS</span>
+          <textarea className="props-textarea mini" value={mobileCss} onChange={(e) => {
+            setMobileCss(e.target.value)
+            send('he:cmd:setResponsiveCss', { tablet: tabletCss, mobile: e.target.value })
+          }} placeholder="display:none;" />
+        </div>
       </div>
 
       {/* espaçamento */}
