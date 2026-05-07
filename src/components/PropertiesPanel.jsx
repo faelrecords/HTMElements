@@ -102,6 +102,11 @@ export default function PropertiesPanel({ iframeRef }) {
     applyCustomShadow()
   }, [shadowX, shadowY, shadowBlur, shadowSpread, shadowOpacity, shadowColor, shadowKind])
 
+  useEffect(() => {
+    if (!selectedId || !info || bgMode !== 'gradient') return
+    applyGradient()
+  }, [gradStart, gradEnd, gradAngle, bgMode])
+
   if (!selectedId || !info) {
     return (
       <div className="props-empty">
@@ -337,7 +342,6 @@ export default function PropertiesPanel({ iframeRef }) {
               <ColorField value={gradEnd} onChange={setGradEnd} />
               <input type="number" value={gradAngle} onChange={(e) => setGradAngle(e.target.value)} title="Ângulo" />
             </div>
-            <button className="action-btn full-width" onClick={applyGradient}>Aplicar gradiente</button>
             <div className="gradient-presets">
               {[
                 'linear-gradient(135deg, #6d71f0, #2bbf88)',
