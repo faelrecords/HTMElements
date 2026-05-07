@@ -5,7 +5,7 @@ import Topbar from './components/Topbar'
 import LeftSidebar from './components/LeftSidebar'
 import RightSidebar from './components/RightSidebar'
 import Canvas from './components/Canvas'
-import WelcomeScreen from './components/WelcomeScreen'
+import WelcomeScreen, { BLANK_HTML } from './components/WelcomeScreen'
 import CodePanel from './components/CodePanel'
 
 export default function App() {
@@ -26,6 +26,12 @@ export default function App() {
     if (loadedHTML && !confirm('Descartar trabalho atual e carregar outro arquivo?')) return
     reset()
   }, [loadedHTML, reset])
+
+  const handleBlank = useCallback(() => {
+    if (loadedHTML && !confirm('Descartar trabalho atual e criar documento em branco?')) return
+    reset()
+    setHTML(BLANK_HTML, { skipHistory: true, resetHistory: true })
+  }, [loadedHTML, reset, setHTML])
 
   const handlePreview = useCallback(() => {
     const iframe = iframeRef.current
@@ -87,6 +93,7 @@ export default function App() {
       <Topbar
         iframeRef={iframeRef}
         onReset={handleReset}
+        onBlank={handleBlank}
         onPreview={handlePreview}
       />
       <div className="workspace">

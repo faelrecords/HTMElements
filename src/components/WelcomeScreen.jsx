@@ -1,19 +1,14 @@
 import { useState, useRef } from 'react'
 import { UploadCloud, FileCode } from 'lucide-react'
 
-const SAMPLE = `<!DOCTYPE html>
+export const BLANK_HTML = `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Página em branco</title>
 </head>
-<body style="font-family:-apple-system,sans-serif;margin:0;background:#fff;color:#0a1f2b;">
-<section style="padding:80px 24px;text-align:center;">
-<h1 style="font-size:48px;font-weight:700;margin:0 0 16px;letter-spacing:-0.02em;">Comece por aqui</h1>
-<p style="font-size:18px;color:#5a6b73;max-width:560px;margin:0 auto 32px;line-height:1.55;">Clique em qualquer elemento para editar. Use o painel lateral para adicionar novos blocos.</p>
-<a href="#" style="display:inline-block;padding:14px 28px;background:#6d71f0;color:#fff;border-radius:100px;text-decoration:none;font-weight:600;">Botão de exemplo</a>
-</section>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;margin:0;background:#fff;color:#0f172a;min-height:100vh;">
 </body>
 </html>`
 
@@ -65,8 +60,8 @@ export default function WelcomeScreen({ onLoad }) {
         </div>
 
         <div className="welcome-actions">
-          <button className="btn" onClick={() => onLoad(SAMPLE)}>
-            <FileCode size={14} /> Começar em branco
+          <button className="btn" onClick={() => onLoad(BLANK_HTML)}>
+            <FileCode size={14} /> Documento em branco
           </button>
         </div>
       </div>
