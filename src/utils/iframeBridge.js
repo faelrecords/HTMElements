@@ -16,6 +16,7 @@ export const IFRAME_BRIDGE_SCRIPT = `
   let dropState = null;
   let absoluteDrag = null;
   let resizeDrag = null;
+  let savedTextRange = null;
   const CONTAINER_TAGS = ['BODY', 'MAIN', 'SECTION', 'HEADER', 'FOOTER', 'NAV', 'ARTICLE', 'ASIDE'];
   function genId() {
     counter += 1;
@@ -141,6 +142,7 @@ export const IFRAME_BRIDGE_SCRIPT = `
   style.id = '__he_editor_styles';
   style.textContent = \`
     [data-he-hover] { outline: 2px dashed #6d71f0 !important; outline-offset: -2px; cursor: pointer !important; }
+    [data-he-id] { user-select: text; }
     [data-he-selected] { outline: 2px solid #6d71f0 !important; outline-offset: -2px; }
     [data-he-drop] { outline: 2px solid #27c08a !important; outline-offset: 3px; }
     [data-he-dragging] { opacity: .45 !important; }
@@ -227,6 +229,18 @@ export const IFRAME_BRIDGE_SCRIPT = `
   resizeHandle.id = '__he_resize_handle';
   resizeHandle.setAttribute('data-he-ui', '');
   document.body.appendChild(resizeHandle);
+
+  function rememberTextSelection() {
+    const sel = window.getSelection?.();
+    if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return;
+    const range = sel.getRangeAt(0);
+    if (!document.body.contains(range.commonAncestorContainer)) return;
+    savedTextRange = range.cloneRange();
+  }
+
+  document.addEventListener('selectionchange', rememberTextSelection);
+  document.addEventListener('mouseup', rememberTextSelection, true);
+  document.addEventListener('keyup', rememberTextSelection, true);
 
   function getEl(id) { return document.querySelector('[data-he-id="' + id + '"]'); }
 
@@ -645,6 +659,7 @@ export const IFRAME_BRIDGE_SCRIPT = `
       roleAttr: el.getAttribute('role') || '',
       ariaLabelAttr: el.getAttribute('aria-label') || '',
       lockedAttr: el.getAttribute('data-he-locked') || '',
+      isHighlight: el.classList.contains('he-highlight'),
       isCodepen: el.hasAttribute('data-he-codepen'),
       codepenHtmlAttr: el.getAttribute('data-codepen-html') || '',
       codepenCssAttr: el.getAttribute('data-codepen-css') || '',
@@ -1097,6 +1112,66 @@ export const IFRAME_BRIDGE_SCRIPT = `
         while (link.firstChild) parentEl.insertBefore(link.firstChild, link);
         link.remove();
         tagAll(parentEl);
+        postChange(parentEl);
+      }
+    }
+    if (msg.type === 'he:cmd:highlightSelection') {
+      const el = getEl(msg.id);
+      const range = savedTextRange;
+      if (el && range && !range.collapsed && el.contains(range.commonAncestorContainer)) {
+        const span = document.createElement('span');
+        span.className = 'he-highlight accent';
+        span.style.setProperty('font-weight', '800', 'important');
+        span.style.setProperty('background-image', 'linear-gradient(135deg, #6d71f0, #2bbf88)', 'important');
+        span.style.setProperty('background-clip', 'text', 'important');
+        span.style.setProperty('-webkit-background-clip', 'text', 'important');
+        span.style.setProperty('color', 'transparent', 'important');
+        span.style.setProperty('-webkit-text-fill-color', 'transparent', 'important');
+        span.appendChild(range.extractContents());
+        range.insertNode(span);
+        tagAll(span);
+        markSelected(span);
+        savedTextRange = null;
+        postChange(span);
+      }
+    }
+    if (msg.type === 'he:cmd:highlightText') {
+      const el = getEl(msg.id);
+      const text = String(msg.text || '');
+      if (el && text) {
+        const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+        let node;
+        while ((node = walker.nextNode())) {
+          const index = node.nodeValue.indexOf(text);
+          if (index === -1) continue;
+          const range = document.createRange();
+          range.setStart(node, index);
+          range.setEnd(node, index + text.length);
+          const span = document.createElement('span');
+          span.className = 'he-highlight accent';
+          span.style.setProperty('font-weight', '800', 'important');
+          span.style.setProperty('background-image', 'linear-gradient(135deg, #6d71f0, #2bbf88)', 'important');
+          span.style.setProperty('background-clip', 'text', 'important');
+          span.style.setProperty('-webkit-background-clip', 'text', 'important');
+          span.style.setProperty('color', 'transparent', 'important');
+          span.style.setProperty('-webkit-text-fill-color', 'transparent', 'important');
+          span.appendChild(range.extractContents());
+          range.insertNode(span);
+          tagAll(span);
+          markSelected(span);
+          postChange(span);
+          break;
+        }
+      }
+    }
+    if (msg.type === 'he:cmd:unwrapHighlight') {
+      const el = getEl(msg.id);
+      if (el && el.classList.contains('he-highlight') && el.parentElement) {
+        const parentEl = el.parentElement;
+        while (el.firstChild) parentEl.insertBefore(el.firstChild, el);
+        el.remove();
+        tagAll(parentEl);
+        markSelected(parentEl);
         postChange(parentEl);
       }
     }

@@ -159,6 +159,7 @@ export default function PropertiesPanel({ iframeRef }) {
   const [focusCss, setFocusCss] = useState('')
   const [tabletCss, setTabletCss] = useState('')
   const [mobileCss, setMobileCss] = useState('')
+  const [highlightText, setHighlightText] = useState('')
   const showNotice = useEditorStore(s => s.showNotice)
   const styleClipboard = useEditorStore(s => s.styleClipboard)
   const setStyleClipboard = useEditorStore(s => s.setStyleClipboard)
@@ -409,6 +410,90 @@ export default function PropertiesPanel({ iframeRef }) {
           {info.hasChildren && contentMode === 'text' && (
             <div className="props-hint">Editar texto remove filhos do elemento.</div>
           )}
+          <button className="action-btn full-width" onClick={() => send('he:cmd:highlightSelection', {})}>
+            Marcar seleção como destaque
+          </button>
+          <div className="props-row">
+            <span className="props-label">Texto</span>
+            <input
+              type="text"
+              value={highlightText}
+              onChange={(e) => setHighlightText(e.target.value)}
+              placeholder="texto para destacar"
+            />
+          </div>
+          <button className="action-btn full-width" disabled={!highlightText.trim()} onClick={() => {
+            send('he:cmd:highlightText', { text: highlightText })
+            setHighlightText('')
+          }}>
+            Destacar texto
+          </button>
+        </div>
+      )}
+
+      {info.isHighlight && (
+        <div className="props-section">
+          <div className="props-section-title">Destaque</div>
+          <div className="props-row">
+            <span className="props-label">Cor</span>
+            <ColorField
+              value={info.styles.color}
+              onChange={(v) => setStyle({
+                color: v,
+                WebkitTextFillColor: '',
+                backgroundImage: '',
+                backgroundClip: '',
+                WebkitBackgroundClip: ''
+              })}
+            />
+          </div>
+          <button className="action-btn full-width" onClick={applyTextGradient}>
+            Gradiente no destaque
+          </button>
+          <div className="props-grid-3">
+            <ColorField value={gradStart} onChange={setGradStart} />
+            <ColorField value={gradEnd} onChange={setGradEnd} />
+            <input
+              type="number"
+              value={gradAngle}
+              onChange={(e) => setGradAngle(e.target.value)}
+              title="Ângulo"
+            />
+          </div>
+          <div className="props-row">
+            <span className="props-label">Peso</span>
+            <select
+              value={String(parseInt(info.styles.fontWeight, 10) || 800)}
+              onChange={(e) => setStyle({ fontWeight: e.target.value })}
+            >
+              {[100,200,300,400,500,600,700,800,900].map(v => (
+                <option key={v} value={String(v)}>{v}</option>
+              ))}
+            </select>
+          </div>
+          <div className="props-row">
+            <span className="props-label">Sombra</span>
+            <input
+              type="text"
+              value={info.styles.textShadow || ''}
+              onChange={(e) => setStyle({ textShadow: e.target.value })}
+              placeholder="0 3px 12px rgba(0,0,0,.25)"
+            />
+          </div>
+          <div className="props-grid-2">
+            <button className="action-btn full-width" onClick={() => setStyle({
+              backgroundImage: '',
+              backgroundClip: '',
+              WebkitBackgroundClip: '',
+              WebkitTextFillColor: '',
+              color: '#0F172A'
+            })}>
+              Remover fundo
+            </button>
+            <button className="action-btn full-width" onClick={() => send('he:cmd:unwrapHighlight', {})}>
+              Remover destaque
+            </button>
+          </div>
         </div>
       )}
 
