@@ -771,6 +771,28 @@ export const IFRAME_BRIDGE_SCRIPT = `
     return styles.filter(Boolean).join('\\n\\n');
   }
 
+  function collectPageCss() {
+    return Array.from(document.querySelectorAll('style'))
+      .filter(styleEl => styleEl.id !== '__he_editor_styles')
+      .map(styleEl => styleEl.textContent || '')
+      .filter(Boolean)
+      .join('\\n\\n');
+  }
+
+  function collectPageLinks() {
+    return Array.from(document.querySelectorAll('link[rel="stylesheet"], link[rel="preconnect"], link[rel="preload"]'))
+      .map(link => link.outerHTML)
+      .join('\\n');
+  }
+
+  function collectPageJs() {
+    return Array.from(document.querySelectorAll('script'))
+      .filter(script => script.id !== '__he_editor_script')
+      .map(script => script.src ? script.outerHTML : (script.textContent || ''))
+      .filter(Boolean)
+      .join('\\n\\n');
+  }
+
   function collectRelatedJs(el) {
     const scripts = [];
     if (el.closest('[data-he-carousel]') || el.querySelector('[data-he-carousel]')) {
@@ -804,17 +826,19 @@ export const IFRAME_BRIDGE_SCRIPT = `
   }
 
   function buildFullCodeParts(el) {
-    const classMap = buildClassMap(el);
-    const htmlClone = el.cloneNode(true);
-    cleanEditorClone(htmlClone, classMap);
-    const css = collectRelatedCss(el, classMap);
-    const js = collectRelatedJs(el);
-    return { html: htmlClone.outerHTML, css, js };
+    const section = nearestSection(el);
+    const htmlClone = section.cloneNode(true);
+    cleanEditorClone(htmlClone, null);
+    const links = collectPageLinks();
+    const css = collectPageCss();
+    const js = collectPageJs();
+    return { html: htmlClone.outerHTML, css, js, links };
   }
 
   function buildFullCode(el) {
     const parts = buildFullCodeParts(el);
-    return '<!-- HTML -->\\n' + parts.html +
+    return (parts.links ? '<!-- LINKS -->\\n' + parts.links + '\\n\\n' : '') +
+      '<!-- HTML -->\\n' + parts.html +
       (parts.css ? '\\n\\n<!-- CSS -->\\n<style>\\n' + parts.css + '\\n</style>' : '') +
       (parts.js ? '\\n\\n<!-- JS -->\\n<script>\\n' + parts.js + '\\n<\\/script>' : '');
   }
