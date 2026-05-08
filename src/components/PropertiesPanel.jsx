@@ -135,6 +135,16 @@ export default function PropertiesPanel({ iframeRef }) {
     })
   }, [gradAngle, gradStart, gradEnd, setStyle])
 
+  const applyTextGradient = useCallback(() => {
+    setStyle({
+      backgroundImage: `linear-gradient(${gradAngle || 135}deg, ${gradStart}, ${gradEnd})`,
+      backgroundClip: 'text',
+      WebkitBackgroundClip: 'text',
+      color: 'transparent',
+      WebkitTextFillColor: 'transparent'
+    })
+  }, [gradAngle, gradStart, gradEnd, setStyle])
+
   const applyShadow = useCallback((value) => {
     if (shadowKind === 'text') setStyle({ textShadow: value })
     else setStyle({ boxShadow: value })
@@ -414,6 +424,17 @@ export default function PropertiesPanel({ iframeRef }) {
             onChange={(v) => setStyle({ color: v })}
           />
         </div>
+        <button className="action-btn full-width" onClick={applyTextGradient}>
+          Aplicar gradiente no texto
+        </button>
+        <button className="action-btn full-width" onClick={() => setStyle({
+          backgroundClip: '',
+          WebkitBackgroundClip: '',
+          WebkitTextFillColor: '',
+          color: '#0F172A'
+        })}>
+          Remover gradiente do texto
+        </button>
         <div className="props-row">
           <span className="props-label">Tamanho</span>
           <input
@@ -510,6 +531,13 @@ export default function PropertiesPanel({ iframeRef }) {
             </div>
           </>
         )}
+        <button className="action-btn full-width" onClick={() => setStyle({
+          background: '',
+          backgroundColor: '',
+          backgroundImage: ''
+        })}>
+          Remover fundo
+        </button>
         <div className="props-row">
           <span className="props-label">Display</span>
           <select
