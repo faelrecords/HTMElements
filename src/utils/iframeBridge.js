@@ -698,6 +698,9 @@ export const IFRAME_BRIDGE_SCRIPT = `
         animationFillMode: cs.animationFillMode,
       },
       animationTriggerAttr: el.getAttribute('data-he-animation-trigger') || 'load',
+      loopAnimationAttr: el.getAttribute('data-he-loop-animation') || '',
+      loopDurationAttr: el.getAttribute('data-he-loop-duration') || '',
+      loopEasingAttr: el.getAttribute('data-he-loop-easing') || '',
       inlineStyle: el.getAttribute('style') || ''
     };
     if (previousMarker) el.style.setProperty('--he-selected-left', previousMarker);

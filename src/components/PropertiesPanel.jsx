@@ -23,6 +23,17 @@ const EASINGS = [
   ['ease', 'ease'], ['linear', 'linear'], ['ease-in', 'ease-in'], ['ease-out', 'ease-out'], ['ease-in-out', 'ease-in-out'],
   ['cubic-bezier(.16,1,.3,1)', 'suave'], ['cubic-bezier(.68,-.55,.27,1.55)', 'elástico']
 ]
+const LOOP_ANIMATIONS = [
+  ['', 'sem contínua'],
+  ['he-pulse', 'Pulse'],
+  ['he-float', 'Float'],
+  ['he-glow', 'Glow'],
+  ['he-spin', 'Girar infinito'],
+  ['he-bounce', 'Bounce'],
+  ['he-swing', 'Swing'],
+  ['he-wobble', 'Wobble'],
+  ['he-shake', 'Shake']
+]
 
 function parsePx(v) {
   if (!v) return ''
@@ -59,9 +70,72 @@ function secondsCss(v) {
   return `${Number(v).toFixed(1)}s`
 }
 
+function cssList(v) {
+  const out = []
+  let depth = 0
+  let chunk = ''
+  for (const ch of String(v || '')) {
+    if (ch === '(') depth += 1
+    if (ch === ')') depth = Math.max(0, depth - 1)
+    if (ch === ',' && depth === 0) {
+      if (chunk.trim()) out.push(chunk.trim())
+      chunk = ''
+    } else {
+      chunk += ch
+    }
+  }
+  if (chunk.trim()) out.push(chunk.trim())
+  return out
+}
+
+function cssItem(v, index, fallback = '') {
+  return cssList(v)[index] || fallback
+}
+
 function animationPreset(name) {
   const item = ANIMATIONS.find(([value]) => value === name)
   return item ? { duration: item[2], easing: item[3], repeat: item[4] } : null
+}
+
+function animationStyles({ entry, loop, duration, delay, easing, repeat, direction, loopDuration, loopEasing }) {
+  if (!entry && !loop) {
+    return {
+      animationName: '',
+      animationDuration: '',
+      animationDelay: '',
+      animationTimingFunction: '',
+      animationIterationCount: '',
+      animationDirection: '',
+      animationFillMode: ''
+    }
+  }
+  const entryName = entry || 'he-fade-in'
+  const entryDuration = duration || '0.7s'
+  const entryDelay = delay || '0s'
+  const entryEasing = easing || 'ease'
+  const entryRepeat = repeat || '1'
+  const entryDirection = direction || 'normal'
+  if (!loop) {
+    return {
+      animationName: entry,
+      animationDuration: entryDuration,
+      animationDelay: entryDelay,
+      animationTimingFunction: entryEasing,
+      animationIterationCount: entryRepeat,
+      animationDirection: entryDirection,
+      animationFillMode: 'both'
+    }
+  }
+  const loopDelay = secondsCss(parseSeconds(entryDelay, 0) + parseSeconds(entryDuration, 0.7))
+  return {
+    animationName: `${entryName}, ${loop}`,
+    animationDuration: `${entryDuration}, ${loopDuration || '1.8s'}`,
+    animationDelay: `${entryDelay}, ${loopDelay}`,
+    animationTimingFunction: `${entryEasing}, ${loopEasing || 'ease-in-out'}`,
+    animationIterationCount: `${entryRepeat}, infinite`,
+    animationDirection: `${entryDirection}, normal`,
+    animationFillMode: 'both, both'
+  }
 }
 
 export default function PropertiesPanel({ iframeRef }) {
@@ -132,6 +206,32 @@ export default function PropertiesPanel({ iframeRef }) {
     send('he:cmd:setAttr', { name: 'data-he-animation-trigger', value })
     setInfo(prev => prev ? { ...prev, animationTriggerAttr: value } : prev)
   }, [send])
+
+  const setLoopAnimationAttr = useCallback((updates) => {
+    Object.entries(updates).forEach(([name, value]) => {
+      send('he:cmd:setAttr', { name, value })
+    })
+    setInfo(prev => prev ? {
+      ...prev,
+      loopAnimationAttr: updates['data-he-loop-animation'] ?? prev.loopAnimationAttr,
+      loopDurationAttr: updates['data-he-loop-duration'] ?? prev.loopDurationAttr,
+      loopEasingAttr: updates['data-he-loop-easing'] ?? prev.loopEasingAttr
+    } : prev)
+  }, [send])
+
+  const setAnimation = useCallback((updates = {}) => {
+    const current = info?.styles || {}
+    const entry = updates.entry ?? cssItem(current.animationName, 0, '')
+    const loop = updates.loop ?? info?.loopAnimationAttr ?? cssItem(current.animationName, 1, '')
+    const duration = updates.duration ?? cssItem(current.animationDuration, 0, '0.7s')
+    const delay = updates.delay ?? cssItem(current.animationDelay, 0, '0s')
+    const easing = updates.easing ?? cssItem(current.animationTimingFunction, 0, 'ease')
+    const repeat = updates.repeat ?? cssItem(current.animationIterationCount, 0, '1')
+    const direction = updates.direction ?? cssItem(current.animationDirection, 0, 'normal')
+    const loopDuration = updates.loopDuration ?? info?.loopDurationAttr ?? cssItem(current.animationDuration, 1, '1.8s')
+    const loopEasing = updates.loopEasing ?? info?.loopEasingAttr ?? cssItem(current.animationTimingFunction, 1, 'ease-in-out')
+    setStyle(animationStyles({ entry, loop, duration, delay, easing, repeat, direction, loopDuration, loopEasing }))
+  }, [info, setStyle])
 
   const applyGradient = useCallback(() => {
     setStyle({
@@ -859,15 +959,14 @@ export default function PropertiesPanel({ iframeRef }) {
         <div className="props-row">
           <span className="props-label">Tipo</span>
           <select
-            value={info.styles.animationName || ''}
+            value={cssItem(info.styles.animationName, 0, '')}
             onChange={(e) => {
               const preset = animationPreset(e.target.value)
-              setStyle({
-                animationName: e.target.value,
-                animationDuration: preset?.duration || info.styles.animationDuration || '0.7s',
-                animationTimingFunction: preset?.easing || info.styles.animationTimingFunction || 'ease',
-                animationIterationCount: preset?.repeat || info.styles.animationIterationCount || '1',
-                animationFillMode: 'both'
+              setAnimation({
+                entry: e.target.value,
+                duration: preset?.duration || cssItem(info.styles.animationDuration, 0, '0.7s'),
+                easing: preset?.easing || cssItem(info.styles.animationTimingFunction, 0, 'ease'),
+                repeat: preset?.repeat === 'infinite' ? '1' : preset?.repeat || cssItem(info.styles.animationIterationCount, 0, '1')
               })
             }}
           >
@@ -877,33 +976,33 @@ export default function PropertiesPanel({ iframeRef }) {
         </div>
         <div className="props-grid-2 compact">
           <label>
-            <span>Duração {secondsValue(info.styles.animationDuration, 0.7).toFixed(1)}s</span>
+            <span>Duração {secondsValue(cssItem(info.styles.animationDuration, 0), 0.7).toFixed(1)}s</span>
             <input
               type="range"
               min="0.1"
               max="10"
               step="0.1"
-              value={secondsValue(info.styles.animationDuration, 0.7)}
-              onChange={(e) => setStyle({ animationDuration: secondsCss(e.target.value) })}
+              value={secondsValue(cssItem(info.styles.animationDuration, 0), 0.7)}
+              onChange={(e) => setAnimation({ duration: secondsCss(e.target.value) })}
             />
           </label>
           <label>
-            <span>Delay {secondsValue(info.styles.animationDelay, 0).toFixed(1)}s</span>
+            <span>Delay {secondsValue(cssItem(info.styles.animationDelay, 0), 0).toFixed(1)}s</span>
             <input
               type="range"
               min="0"
               max="10"
               step="0.1"
-              value={secondsValue(info.styles.animationDelay, 0)}
-              onChange={(e) => setStyle({ animationDelay: secondsCss(e.target.value) })}
+              value={secondsValue(cssItem(info.styles.animationDelay, 0), 0)}
+              onChange={(e) => setAnimation({ delay: secondsCss(e.target.value) })}
             />
           </label>
         </div>
         <div className="props-row">
           <span className="props-label">Easing</span>
           <select
-            value={info.styles.animationTimingFunction || ''}
-            onChange={(e) => setStyle({ animationTimingFunction: e.target.value })}
+            value={cssItem(info.styles.animationTimingFunction, 0, '')}
+            onChange={(e) => setAnimation({ easing: e.target.value })}
           >
             <option value="">auto</option>
             {EASINGS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
@@ -912,8 +1011,8 @@ export default function PropertiesPanel({ iframeRef }) {
         <div className="props-row">
           <span className="props-label">Repetir</span>
           <select
-            value={info.styles.animationIterationCount || ''}
-            onChange={(e) => setStyle({ animationIterationCount: e.target.value })}
+            value={cssItem(info.styles.animationIterationCount, 0, '')}
+            onChange={(e) => setAnimation({ repeat: e.target.value })}
           >
             <option value="">auto</option>
             <option value="1">1 vez</option>
@@ -925,14 +1024,64 @@ export default function PropertiesPanel({ iframeRef }) {
         <div className="props-row">
           <span className="props-label">Direção</span>
           <select
-            value={info.styles.animationDirection || ''}
-            onChange={(e) => setStyle({ animationDirection: e.target.value })}
+            value={cssItem(info.styles.animationDirection, 0, '')}
+            onChange={(e) => setAnimation({ direction: e.target.value })}
           >
             <option value="">normal</option>
             <option value="reverse">reverse</option>
             <option value="alternate">alternate</option>
             <option value="alternate-reverse">alt reverse</option>
           </select>
+        </div>
+        <div className="props-row">
+          <span className="props-label">Contínua</span>
+          <select
+            value={info.loopAnimationAttr || cssItem(info.styles.animationName, 1, '')}
+            onChange={(e) => {
+              const preset = animationPreset(e.target.value)
+              setLoopAnimationAttr({
+                'data-he-loop-animation': e.target.value,
+                'data-he-loop-duration': preset?.duration || info.loopDurationAttr || '1.8s',
+                'data-he-loop-easing': preset?.easing || info.loopEasingAttr || 'ease-in-out'
+              })
+              setAnimation({
+                loop: e.target.value,
+                loopDuration: preset?.duration || info.loopDurationAttr || '1.8s',
+                loopEasing: preset?.easing || info.loopEasingAttr || 'ease-in-out'
+              })
+            }}
+          >
+            {LOOP_ANIMATIONS.map(([value, label]) => <option key={value || 'none'} value={value}>{label}</option>)}
+          </select>
+        </div>
+        <div className="props-grid-2 compact">
+          <label>
+            <span>Loop {secondsValue(info.loopDurationAttr || cssItem(info.styles.animationDuration, 1), 1.8).toFixed(1)}s</span>
+            <input
+              type="range"
+              min="0.1"
+              max="10"
+              step="0.1"
+              value={secondsValue(info.loopDurationAttr || cssItem(info.styles.animationDuration, 1), 1.8)}
+              onChange={(e) => {
+                const value = secondsCss(e.target.value)
+                setLoopAnimationAttr({ 'data-he-loop-duration': value })
+                setAnimation({ loopDuration: value })
+              }}
+            />
+          </label>
+          <label>
+            <span>Easing loop</span>
+            <select
+              value={info.loopEasingAttr || cssItem(info.styles.animationTimingFunction, 1, 'ease-in-out')}
+              onChange={(e) => {
+                setLoopAnimationAttr({ 'data-he-loop-easing': e.target.value })
+                setAnimation({ loopEasing: e.target.value })
+              }}
+            >
+              {EASINGS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+            </select>
+          </label>
         </div>
         <div className="props-row">
           <span className="props-label">Trigger</span>
@@ -960,6 +1109,11 @@ export default function PropertiesPanel({ iframeRef }) {
                 animationFillMode: ''
               })
               setAnimationTriggerAttr('')
+              setLoopAnimationAttr({
+                'data-he-loop-animation': '',
+                'data-he-loop-duration': '',
+                'data-he-loop-easing': ''
+              })
             }}
           >
             Remover
