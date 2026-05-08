@@ -432,6 +432,31 @@ export default function PropertiesPanel({ iframeRef }) {
         <button className="action-btn full-width" onClick={applyTextGradient}>
           Aplicar gradiente no texto
         </button>
+        <div className="props-grid-3">
+          <ColorField value={gradStart} onChange={setGradStart} />
+          <ColorField value={gradEnd} onChange={setGradEnd} />
+          <input
+            type="number"
+            value={gradAngle}
+            onChange={(e) => setGradAngle(e.target.value)}
+            title="Ângulo"
+          />
+        </div>
+        <div className="props-row">
+          <span className="props-label">Gradiente</span>
+          <input
+            type="text"
+            value={info.styles.backgroundImage || ''}
+            onChange={(e) => setStyle({
+              backgroundImage: e.target.value,
+              backgroundClip: 'text',
+              WebkitBackgroundClip: 'text',
+              color: 'transparent',
+              WebkitTextFillColor: 'transparent'
+            })}
+            placeholder="linear-gradient(135deg, #6d71f0, #2bbf88)"
+          />
+        </div>
         <button className="action-btn full-width" onClick={() => setStyle({
           backgroundClip: '',
           WebkitBackgroundClip: '',
