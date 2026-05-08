@@ -497,6 +497,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 .props-textarea { resize: vertical; min-height: 70px; font-family: var(--font-mono); font-size: 12px; }
 .props-textarea.mini { min-height: 52px; }
 .props-textarea.codepen-code { min-height: 96px; }
+.props-textarea.full-code { min-height: 180px; }
 .props-mode-group { margin-bottom: 12px; }
 .props-mode-group button { gap: 5px; min-height: 28px; }
 .props-mode-group + .props-row { margin-top: 2px; }

@@ -648,6 +648,7 @@ export const IFRAME_BRIDGE_SCRIPT = `
       codepenHtmlAttr: el.getAttribute('data-codepen-html') || '',
       codepenCssAttr: el.getAttribute('data-codepen-css') || '',
       codepenJsAttr: el.getAttribute('data-codepen-js') || '',
+      fullCode: buildFullCode(el),
       styles: {
         color: rgbToHex(cs.color),
         backgroundColor: rgbToHex(cs.backgroundColor),
@@ -710,23 +711,29 @@ export const IFRAME_BRIDGE_SCRIPT = `
   }
 
   function cleanEditorClone(node) {
-    node.querySelectorAll?.('[data-he-id]').forEach(el => el.removeAttribute('data-he-id'));
-    node.querySelectorAll?.('[data-he-hover]').forEach(el => el.removeAttribute('data-he-hover'));
-    node.querySelectorAll?.('[data-he-selected]').forEach(el => el.removeAttribute('data-he-selected'));
-    node.querySelectorAll?.('[data-he-tag]').forEach(el => el.removeAttribute('data-he-tag'));
-    node.querySelectorAll?.('[data-he-drop]').forEach(el => el.removeAttribute('data-he-drop'));
-    node.querySelectorAll?.('[data-he-dragging]').forEach(el => el.removeAttribute('data-he-dragging'));
-    node.querySelectorAll?.('[data-he-container]').forEach(el => el.removeAttribute('data-he-container'));
-    node.querySelectorAll?.('[data-he-locked]').forEach(el => el.removeAttribute('data-he-locked'));
+    const all = node.nodeType === 1 ? [node, ...Array.from(node.querySelectorAll?.('*') || [])] : Array.from(node.querySelectorAll?.('*') || []);
+    all.forEach(el => {
+      el.removeAttribute('data-he-id');
+      el.removeAttribute('data-he-hover');
+      el.removeAttribute('data-he-selected');
+      el.removeAttribute('data-he-tag');
+      el.removeAttribute('data-he-drop');
+      el.removeAttribute('data-he-dragging');
+      el.removeAttribute('data-he-container');
+      el.removeAttribute('data-he-locked');
+      if (el.getAttribute('draggable') === 'true') el.removeAttribute('draggable');
+      el.classList?.remove('he-animate-in-view', 'he-animation-preview');
+      if (el.getAttribute('style')?.includes('--he-selected-left')) el.style.removeProperty('--he-selected-left');
+    });
     node.querySelectorAll?.('[data-he-ui]').forEach(el => el.remove());
-    node.querySelectorAll?.('[draggable="true"]').forEach(el => el.removeAttribute('draggable'));
-    node.querySelectorAll?.('.he-animate-in-view').forEach(el => el.classList.remove('he-animate-in-view'));
-    node.querySelectorAll?.('.he-animation-preview').forEach(el => el.classList.remove('he-animation-preview'));
-    node.querySelectorAll?.('[style*="--he-selected-left"]').forEach(el => el.style.removeProperty('--he-selected-left'));
     node.querySelectorAll?.('[data-he-codepen]').forEach(el => {
       const frame = el.querySelector('iframe');
       if (frame) frame.setAttribute('srcdoc', codepenDoc(el.getAttribute('data-codepen-html') || '', el.getAttribute('data-codepen-css') || '', el.getAttribute('data-codepen-js') || ''));
     });
+    if (node.matches?.('[data-he-codepen]')) {
+      const frame = node.querySelector('iframe');
+      if (frame) frame.setAttribute('srcdoc', codepenDoc(node.getAttribute('data-codepen-html') || '', node.getAttribute('data-codepen-css') || '', node.getAttribute('data-codepen-js') || ''));
+    }
   }
 
   function collectRelatedCss(el) {
@@ -778,6 +785,16 @@ export const IFRAME_BRIDGE_SCRIPT = `
 
   function nearestSection(el) {
     return el.closest('section, header, footer, main, article, aside, nav') || el;
+  }
+
+  function buildFullCode(el) {
+    const htmlClone = el.cloneNode(true);
+    cleanEditorClone(htmlClone);
+    const css = collectRelatedCss(el);
+    const js = collectRelatedJs(el);
+    return '<!-- HTML -->\\n' + htmlClone.outerHTML +
+      (css ? '\\n\\n<!-- CSS -->\\n<style>\\n' + css + '\\n</style>' : '') +
+      (js ? '\\n\\n<!-- JS -->\\n<script>\\n' + js + '\\n<\\/script>' : '');
   }
 
   function postChange(el) {

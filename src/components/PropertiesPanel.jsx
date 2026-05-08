@@ -859,6 +859,24 @@ export default function PropertiesPanel({ iframeRef }) {
 
       {/* atributos */}
       <div className="props-section">
+        <div className="props-section-title">HTML</div>
+        <div className="props-row stacked">
+          <span className="props-label">HTML + CSS + Java</span>
+          <textarea
+            className="props-textarea full-code"
+            value={info.fullCode || ''}
+            readOnly
+          />
+        </div>
+        <button className="action-btn full-width" onClick={() => {
+          navigator.clipboard?.writeText(info.fullCode || '')
+          showNotice('Código copiado')
+        }}>
+          Copiar código completo
+        </button>
+      </div>
+
+      <div className="props-section">
         <div className="props-section-title">Atributos</div>
         <div className="props-row">
           <span className="props-label">Classe</span>
