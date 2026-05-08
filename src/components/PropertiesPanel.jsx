@@ -91,6 +91,10 @@ export default function PropertiesPanel({ iframeRef }) {
         setInfo(m.info ? { id: m.id, tag: m.tag, ...m.info } : null)
       }
       if (m.type === 'he:select' && !m.info) setInfo(null)
+      if (m.type === 'he:copyFullCode') {
+        navigator.clipboard?.writeText(m.code || '')
+        showNotice('Seção copiada')
+      }
     }
     window.addEventListener('message', onMsg)
     return () => window.removeEventListener('message', onMsg)
@@ -245,6 +249,11 @@ export default function PropertiesPanel({ iframeRef }) {
           showNotice('HTML copiado')
         }}>
           Copiar HTML
+        </button>
+        <button className="action-btn" onClick={() => {
+          send('he:cmd:copySectionFullCode', {})
+        }}>
+          Copiar seção
         </button>
         <button className="action-btn" onClick={saveComponent}>
           Salvar comp.

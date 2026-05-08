@@ -709,6 +709,77 @@ export const IFRAME_BRIDGE_SCRIPT = `
       .trim();
   }
 
+  function cleanEditorClone(node) {
+    node.querySelectorAll?.('[data-he-id]').forEach(el => el.removeAttribute('data-he-id'));
+    node.querySelectorAll?.('[data-he-hover]').forEach(el => el.removeAttribute('data-he-hover'));
+    node.querySelectorAll?.('[data-he-selected]').forEach(el => el.removeAttribute('data-he-selected'));
+    node.querySelectorAll?.('[data-he-tag]').forEach(el => el.removeAttribute('data-he-tag'));
+    node.querySelectorAll?.('[data-he-drop]').forEach(el => el.removeAttribute('data-he-drop'));
+    node.querySelectorAll?.('[data-he-dragging]').forEach(el => el.removeAttribute('data-he-dragging'));
+    node.querySelectorAll?.('[data-he-container]').forEach(el => el.removeAttribute('data-he-container'));
+    node.querySelectorAll?.('[data-he-locked]').forEach(el => el.removeAttribute('data-he-locked'));
+    node.querySelectorAll?.('[data-he-ui]').forEach(el => el.remove());
+    node.querySelectorAll?.('[draggable="true"]').forEach(el => el.removeAttribute('draggable'));
+    node.querySelectorAll?.('.he-animate-in-view').forEach(el => el.classList.remove('he-animate-in-view'));
+    node.querySelectorAll?.('.he-animation-preview').forEach(el => el.classList.remove('he-animation-preview'));
+    node.querySelectorAll?.('[style*="--he-selected-left"]').forEach(el => el.style.removeProperty('--he-selected-left'));
+    node.querySelectorAll?.('[data-he-codepen]').forEach(el => {
+      const frame = el.querySelector('iframe');
+      if (frame) frame.setAttribute('srcdoc', codepenDoc(el.getAttribute('data-codepen-html') || '', el.getAttribute('data-codepen-css') || '', el.getAttribute('data-codepen-js') || ''));
+    });
+  }
+
+  function collectRelatedCss(el) {
+    const ids = new Set(Array.from(el.querySelectorAll('[data-he-id]')).map(n => n.getAttribute('data-he-id')));
+    if (el.hasAttribute('data-he-id')) ids.add(el.getAttribute('data-he-id'));
+    const styles = [];
+    document.querySelectorAll('style').forEach(styleEl => {
+      if (styleEl.id === '__he_editor_styles' || styleEl.id === '__he_animation_styles') return;
+      if (styleEl.id === 'he-global-css' || styleEl.id === 'he-color-vars') styles.push(styleEl.textContent || '');
+      if (styleEl.id?.startsWith('he-pseudo-') || styleEl.id?.startsWith('he-responsive-')) {
+        const id = styleEl.id.replace(/^he-(pseudo|responsive)-/, '');
+        if (ids.has(id)) styles.push(styleEl.textContent || '');
+      }
+    });
+    const animNames = new Set();
+    [el, ...Array.from(el.querySelectorAll('*'))].forEach(n => {
+      const name = getComputedStyle(n).animationName;
+      if (name && name !== 'none') animNames.add(name);
+    });
+    if (animNames.size) {
+      const sheet = Array.from(document.styleSheets).find(s => s.ownerNode?.id === '__he_animation_styles');
+      try {
+        Array.from(sheet?.cssRules || []).forEach(rule => {
+          if (rule.type === CSSRule.KEYFRAMES_RULE && animNames.has(rule.name)) styles.push(rule.cssText);
+        });
+      } catch {}
+    }
+    return styles.filter(Boolean).join('\\n\\n');
+  }
+
+  function collectRelatedJs(el) {
+    const scripts = [];
+    if (el.closest('[data-he-carousel]') || el.querySelector('[data-he-carousel]')) {
+      scripts.push(document.getElementById('__he_carousel_runtime')?.textContent || '');
+    }
+    if (el.querySelector('[data-he-animation-trigger="scroll"], [data-he-animation-trigger="hover"]') || el.matches?.('[data-he-animation-trigger="scroll"], [data-he-animation-trigger="hover"]')) {
+      scripts.push(document.getElementById('__he_animation_runtime')?.textContent || '');
+    }
+    el.querySelectorAll('[data-he-codepen]').forEach(n => {
+      const js = n.getAttribute('data-codepen-js') || '';
+      if (js) scripts.push(js);
+    });
+    if (el.hasAttribute('data-he-codepen')) {
+      const js = el.getAttribute('data-codepen-js') || '';
+      if (js) scripts.push(js);
+    }
+    return scripts.filter(Boolean).join('\\n\\n');
+  }
+
+  function nearestSection(el) {
+    return el.closest('section, header, footer, main, article, aside, nav') || el;
+  }
+
   function postChange(el) {
     tagAll(document.body);
     sendTree();
@@ -837,6 +908,20 @@ export const IFRAME_BRIDGE_SCRIPT = `
       }
       link.href = msg.href || '';
       parent.postMessage({ type: 'he:changed' }, '*');
+    }
+    if (msg.type === 'he:cmd:copySectionFullCode') {
+      const el = getEl(msg.id);
+      if (el) {
+        const section = nearestSection(el);
+        const htmlClone = section.cloneNode(true);
+        cleanEditorClone(htmlClone);
+        const css = collectRelatedCss(section);
+        const js = collectRelatedJs(section);
+        const code = '<!-- HTML -->\\n' + htmlClone.outerHTML +
+          (css ? '\\n\\n<!-- CSS -->\\n<style>\\n' + css + '\\n</style>' : '') +
+          (js ? '\\n\\n<!-- JS -->\\n<script>\\n' + js + '\\n<\\/script>' : '');
+        parent.postMessage({ type: 'he:copyFullCode', code }, '*');
+      }
     }
 
     if (msg.type === 'he:cmd:setText') {
