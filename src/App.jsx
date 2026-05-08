@@ -33,6 +33,13 @@ export default function App() {
     setHTML(BLANK_HTML, { skipHistory: true, resetHistory: true })
   }, [loadedHTML, reset, setHTML])
 
+  const handleImportCode = useCallback(() => {
+    const html = prompt('Cole o código HTML')
+    if (!html || !html.trim()) return
+    if (loadedHTML && !confirm('Descartar trabalho atual e importar este HTML?')) return
+    handleLoad(html)
+  }, [handleLoad, loadedHTML])
+
   const handlePreview = useCallback(() => {
     const iframe = iframeRef.current
     if (!iframe || !iframe.contentDocument) return
@@ -97,6 +104,7 @@ export default function App() {
         iframeRef={iframeRef}
         onReset={handleReset}
         onBlank={handleBlank}
+        onImportCode={handleImportCode}
         onPreview={handlePreview}
       />
       <div className="workspace">

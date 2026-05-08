@@ -639,6 +639,17 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 .welcome-drop-icon { color: var(--accent); margin-bottom: 12px; }
 .welcome-drop-text { font-weight: 500; margin-bottom: 4px; }
 .welcome-drop-hint { font-size: 12px; color: var(--muted); }
+.welcome-code {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+.welcome-code textarea {
+  min-height: 120px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  resize: vertical;
+}
 .welcome-actions { display: flex; gap: 8px; justify-content: center; margin-top: 16px; }
 
 .notice {

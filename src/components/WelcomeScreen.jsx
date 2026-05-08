@@ -14,6 +14,7 @@ export const BLANK_HTML = `<!DOCTYPE html>
 
 export default function WelcomeScreen({ onLoad }) {
   const [dragging, setDragging] = useState(false)
+  const [rawHtml, setRawHtml] = useState('')
   const inputRef = useRef(null)
 
   function readFile(file) {
@@ -57,6 +58,21 @@ export default function WelcomeScreen({ onLoad }) {
             style={{ display: 'none' }}
             onChange={(e) => readFile(e.target.files?.[0])}
           />
+        </div>
+
+        <div className="welcome-code">
+          <textarea
+            value={rawHtml}
+            onChange={(e) => setRawHtml(e.target.value)}
+            placeholder="Cole seu código HTML aqui"
+          />
+          <button
+            className="btn"
+            disabled={!rawHtml.trim()}
+            onClick={() => onLoad(rawHtml)}
+          >
+            <FileCode size={14} /> Importar código HTML
+          </button>
         </div>
 
         <div className="welcome-actions">

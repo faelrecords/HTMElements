@@ -1,7 +1,7 @@
 import { Undo2, Redo2, Eye, Download, Upload, FileCode2, FilePlus2 } from 'lucide-react'
 import { useEditorStore } from '../store/editorStore'
 
-export default function Topbar({ iframeRef, onReset, onBlank, onPreview }) {
+export default function Topbar({ iframeRef, onReset, onBlank, onImportCode, onPreview }) {
   const historyIndex = useEditorStore(s => s.historyIndex)
   const history = useEditorStore(s => s.history)
   const codeOpen = useEditorStore(s => s.codeOpen)
@@ -106,6 +106,9 @@ export default function Topbar({ iframeRef, onReset, onBlank, onPreview }) {
         </button>
         <button className="btn" onClick={onBlank} title="Criar documento em branco">
           <FilePlus2 size={14} /> Branco
+        </button>
+        <button className="btn" onClick={onImportCode} title="Importar código HTML">
+          <FileCode2 size={14} /> Importar
         </button>
         <button className="btn" onClick={onPreview} title="Visualizar resultado">
           <Eye size={14} /> Preview
