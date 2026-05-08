@@ -1304,6 +1304,8 @@ export function injectBridge(html) {
 // garante que o HTML tenha estrutura básica
 export function normalizeHTML(rawHTML) {
   const trimmed = rawHTML.trim()
+  const parted = parseCopiedCodeParts(trimmed)
+  if (parted) return parted
   if (trimmed.toLowerCase().startsWith('<!doctype') || trimmed.toLowerCase().startsWith('<html')) {
     return trimmed
   }
@@ -1319,4 +1321,63 @@ export function normalizeHTML(rawHTML) {
 ${trimmed}
 </body>
 </html>`
+}
+
+function parseCopiedCodeParts(raw) {
+  const htmlMatch = raw.match(/<!--\s*HTML\s*-->([\s\S]*?)(?=<!--\s*CSS\s*-->|<!--\s*JS\s*-->|$)/i)
+  const cssMatch = raw.match(/<!--\s*CSS\s*-->([\s\S]*?)(?=<!--\s*JS\s*-->|$)/i)
+  const jsMatch = raw.match(/<!--\s*JS\s*-->([\s\S]*)$/i)
+  if (!htmlMatch && !cssMatch && !jsMatch) return null
+  const html = stripWrapper(htmlMatch?.[1] || '', 'style').trim()
+  const css = stripWrapper(cssMatch?.[1] || '', 'style').trim()
+  const js = cleanImportedJS(stripWrapper(jsMatch?.[1] || '', 'script')).trim()
+  return `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Documento</title>
+${css ? `<style>\n${css}\n</style>` : ''}
+</head>
+<body>
+${html}
+${js ? `<script>\n${js}\n</script>` : ''}
+</body>
+</html>`
+}
+
+function stripWrapper(code, tag) {
+  return String(code || '')
+    .replace(new RegExp('^\\s*<' + tag + '[^>]*>', 'i'), '')
+    .replace(new RegExp('</' + tag + '>\\s*$', 'i'), '')
+}
+
+function cleanImportedJS(code) {
+  const text = String(code || '').trim()
+  if (!text.startsWith('{')) return text
+  let depth = 0
+  let inString = false
+  let quote = ''
+  let escaped = false
+  for (let i = 0; i < text.length; i += 1) {
+    const ch = text[i]
+    if (inString) {
+      if (escaped) escaped = false
+      else if (ch === '\\') escaped = true
+      else if (ch === quote) inString = false
+      continue
+    }
+    if (ch === '"' || ch === "'") {
+      inString = true
+      quote = ch
+      continue
+    }
+    if (ch === '{') depth += 1
+    if (ch === '}') depth -= 1
+    if (depth === 0) {
+      const rest = text.slice(i + 1).trim()
+      return rest || ''
+    }
+  }
+  return text
 }
