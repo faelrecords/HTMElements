@@ -477,17 +477,24 @@ export default function PropertiesPanel({ iframeRef }) {
         </div>
         <div className="props-row">
           <span className="props-label">Peso</span>
+          <input
+            type="range"
+            min="100"
+            max="900"
+            step="100"
+            value={parseInt(info.styles.fontWeight, 10) || 400}
+            onChange={(e) => setStyle({ fontWeight: e.target.value })}
+          />
+        </div>
+        <div className="props-row">
+          <span className="props-label">Valor</span>
           <select
-            value={info.styles.fontWeight}
+            value={String(parseInt(info.styles.fontWeight, 10) || 400)}
             onChange={(e) => setStyle({ fontWeight: e.target.value })}
           >
-            <option value="300">Light (300)</option>
-            <option value="400">Regular (400)</option>
-            <option value="500">Medium (500)</option>
-            <option value="600">Semibold (600)</option>
-            <option value="700">Bold (700)</option>
-            <option value="800">Extrabold (800)</option>
-            <option value="900">Black (900)</option>
+            {[100,200,300,400,500,600,700,800,900].map(v => (
+              <option key={v} value={String(v)}>{v}</option>
+            ))}
           </select>
         </div>
         <div className="props-row">
