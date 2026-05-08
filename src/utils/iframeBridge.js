@@ -638,6 +638,7 @@ export const IFRAME_BRIDGE_SCRIPT = `
       classList: Array.from(el.classList).filter(c => c !== 'he-animate-in-view').join(' '),
       idAttr: el.id || '',
       hrefAttr: el.getAttribute('href') || '',
+      targetAttr: el.getAttribute('target') || '',
       srcAttr: el.getAttribute('src') || '',
       altAttr: el.getAttribute('alt') || '',
       titleAttr: el.getAttribute('title') || '',
@@ -1066,6 +1067,34 @@ export const IFRAME_BRIDGE_SCRIPT = `
         if (msg.name && msg.name.startsWith('data-codepen-')) renderCodepens(document);
         postChange(el);
         watchAnimations();
+      }
+    }
+    if (msg.type === 'he:cmd:wrapLink') {
+      const el = getEl(msg.id);
+      if (el) {
+        let link = el.tagName === 'A' ? el : null;
+        if (!link) {
+          link = document.createElement('a');
+          el.parentElement.insertBefore(link, el);
+          link.appendChild(el);
+          tagAll(link);
+        }
+        link.setAttribute('href', msg.href || '#');
+        if (msg.target) link.setAttribute('target', msg.target);
+        else link.removeAttribute('target');
+        markSelected(link);
+        postChange(link);
+      }
+    }
+    if (msg.type === 'he:cmd:unwrapLink') {
+      const el = getEl(msg.id);
+      const link = el?.tagName === 'A' ? el : el?.closest('a');
+      if (link && link.parentElement) {
+        const parentEl = link.parentElement;
+        while (link.firstChild) parentEl.insertBefore(link.firstChild, link);
+        link.remove();
+        tagAll(parentEl);
+        postChange(parentEl);
       }
     }
     if (msg.type === 'he:cmd:setPseudoCss') {

@@ -312,7 +312,7 @@ export default function PropertiesPanel({ iframeRef }) {
         </div>
       )}
 
-      {isLink && (
+      {(isText || isLink) && (
         <div className="props-section">
           <div className="props-section-title">Link</div>
           <div className="props-row">
@@ -324,9 +324,42 @@ export default function PropertiesPanel({ iframeRef }) {
                 setInfo(prev => ({ ...prev, hrefAttr: e.target.value }))
                 send('he:cmd:setAttr', { name: 'href', value: e.target.value })
               }}
-              placeholder="https://"
+              placeholder="https://site.com ou #minha-ancora"
             />
           </div>
+          <div className="props-row">
+            <span className="props-label">Target</span>
+            <select
+              value={info.targetAttr || ''}
+              onChange={(e) => {
+                setInfo(prev => ({ ...prev, targetAttr: e.target.value }))
+                send('he:cmd:setAttr', { name: 'target', value: e.target.value })
+              }}
+            >
+              <option value="">mesma aba</option>
+              <option value="_blank">nova aba</option>
+            </select>
+          </div>
+          <div className="props-row">
+            <span className="props-label">ID âncora</span>
+            <input
+              type="text"
+              value={info.idAttr || ''}
+              onChange={(e) => {
+                setInfo(prev => ({ ...prev, idAttr: e.target.value }))
+                send('he:cmd:setAttr', { name: 'id', value: e.target.value })
+              }}
+              placeholder="minha-ancora"
+            />
+          </div>
+          <button className="action-btn full-width" onClick={() => {
+            send('he:cmd:wrapLink', { href: info.hrefAttr || '#minha-ancora', target: info.targetAttr || '' })
+          }}>
+            Transformar em link
+          </button>
+          <button className="action-btn full-width" onClick={() => send('he:cmd:unwrapLink', {})}>
+            Remover link
+          </button>
         </div>
       )}
 
