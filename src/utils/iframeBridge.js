@@ -39,6 +39,7 @@ export const IFRAME_BRIDGE_SCRIPT = `
     }
     if (root === document.body) root.setAttribute('data-he-container', '');
     renderCodepens(root);
+    renderResponsiveStyles(root);
   }
 
   function codepenDoc(html, css, js) {
@@ -70,6 +71,43 @@ export const IFRAME_BRIDGE_SCRIPT = `
     styleEl.textContent = css || '';
   }
 
+  function responsiveStyles(el) {
+    try { return JSON.parse(el.getAttribute('data-he-responsive-style') || '{}') || {}; }
+    catch { return {}; }
+  }
+
+  function ensureResponsiveId(el) {
+    let id = el.getAttribute('data-he-rid');
+    if (!id) {
+      id = genId();
+      el.setAttribute('data-he-rid', id);
+    }
+    return id;
+  }
+
+  function styleObjectCss(styles) {
+    return Object.entries(styles || {})
+      .filter(([, value]) => value !== '' && value !== null && value !== undefined)
+      .map(([key, value]) => camelToKebab(key) + ':' + String(value) + ' !important;')
+      .join('');
+  }
+
+  function renderResponsiveStyle(el) {
+    const data = responsiveStyles(el);
+    const id = ensureResponsiveId(el);
+    const selector = '[data-he-rid="' + id + '"]';
+    const tablet = styleObjectCss(data.tablet);
+    const mobile = styleObjectCss(data.mobile);
+    upsertStyle('he-responsive-style-' + id,
+      (tablet ? '@media(max-width:1024px){' + selector + '{' + tablet + '}}' : '') +
+      (mobile ? '@media(max-width:480px){' + selector + '{' + mobile + '}}' : '')
+    );
+  }
+
+  function renderResponsiveStyles(root = document) {
+    root.querySelectorAll?.('[data-he-responsive-style]').forEach(renderResponsiveStyle);
+  }
+
   function isContainer(el) {
     if (!el || !el.tagName) return false;
     if (CONTAINER_TAGS.includes(el.tagName)) return true;
@@ -78,6 +116,7 @@ export const IFRAME_BRIDGE_SCRIPT = `
 
   tagAll(document.body);
   renderCodepens(document);
+  renderResponsiveStyles(document);
 
   if (!document.getElementById('__he_animation_styles')) {
     const animationStyle = document.createElement('style');
@@ -659,6 +698,7 @@ export const IFRAME_BRIDGE_SCRIPT = `
       roleAttr: el.getAttribute('role') || '',
       ariaLabelAttr: el.getAttribute('aria-label') || '',
       lockedAttr: el.getAttribute('data-he-locked') || '',
+      responsiveStyles: responsiveStyles(el),
       isHighlight: el.classList.contains('he-highlight'),
       isCodepen: el.hasAttribute('data-he-codepen'),
       codepenHtmlAttr: el.getAttribute('data-codepen-html') || '',
@@ -760,7 +800,9 @@ export const IFRAME_BRIDGE_SCRIPT = `
 
   function collectRelatedCss(el, classMap = null) {
     const ids = new Set(Array.from(el.querySelectorAll('[data-he-id]')).map(n => n.getAttribute('data-he-id')));
+    const rids = new Set(Array.from(el.querySelectorAll('[data-he-rid]')).map(n => n.getAttribute('data-he-rid')));
     if (el.hasAttribute('data-he-id')) ids.add(el.getAttribute('data-he-id'));
+    if (el.hasAttribute('data-he-rid')) rids.add(el.getAttribute('data-he-rid'));
     const styles = [];
     document.querySelectorAll('style').forEach(styleEl => {
       if (styleEl.id === '__he_editor_styles' || styleEl.id === '__he_animation_styles') return;
@@ -772,6 +814,10 @@ export const IFRAME_BRIDGE_SCRIPT = `
           if (classMap && classMap.has(id)) css = css.replaceAll('[data-he-id="' + id + '"]', '.' + classMap.get(id));
           styles.push(css);
         }
+      }
+      if (styleEl.id?.startsWith('he-responsive-style-')) {
+        const id = styleEl.id.replace(/^he-responsive-style-/, '');
+        if (rids.has(id)) styles.push(styleEl.textContent || '');
       }
     });
     const animNames = new Set();
@@ -1193,6 +1239,19 @@ export const IFRAME_BRIDGE_SCRIPT = `
         const mobile = msg.mobile ? '@media(max-width:480px){[data-he-id="' + id + '"]{' + msg.mobile + '}}' : '';
         upsertStyle('he-responsive-' + id, tablet + mobile);
         parent.postMessage({ type: 'he:changed' }, '*');
+      }
+    }
+    if (msg.type === 'he:cmd:setDeviceStyle') {
+      const el = getEl(msg.id);
+      if (el && (msg.device === 'tablet' || msg.device === 'mobile')) {
+        const data = responsiveStyles(el);
+        data[msg.device] = { ...(data[msg.device] || {}), ...(msg.styles || {}) };
+        Object.keys(data[msg.device]).forEach(key => {
+          if (data[msg.device][key] === '' || data[msg.device][key] === null || data[msg.device][key] === undefined) delete data[msg.device][key];
+        });
+        el.setAttribute('data-he-responsive-style', JSON.stringify(data));
+        renderResponsiveStyle(el);
+        postChange(el);
       }
     }
     if (msg.type === 'he:cmd:align') {

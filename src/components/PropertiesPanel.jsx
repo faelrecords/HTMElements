@@ -140,6 +140,7 @@ function animationStyles({ entry, loop, duration, delay, easing, repeat, directi
 
 export default function PropertiesPanel({ iframeRef }) {
   const selectedId = useEditorStore(s => s.selectedId)
+  const device = useEditorStore(s => s.device)
   const [info, setInfo] = useState(null)
   const [contentMode, setContentMode] = useState('text')
   const [bgMode, setBgMode] = useState('color')
@@ -196,6 +197,26 @@ export default function PropertiesPanel({ iframeRef }) {
     send('he:cmd:setStyle', { styles })
     setInfo(prev => prev ? { ...prev, styles: { ...prev.styles, ...styles } } : prev)
   }, [send])
+
+  const setScopedStyle = useCallback((styles) => {
+    if (device === 'desktop') {
+      setStyle(styles)
+      return
+    }
+    send('he:cmd:setDeviceStyle', { device, styles })
+    setInfo(prev => prev ? {
+      ...prev,
+      responsiveStyles: {
+        ...(prev.responsiveStyles || {}),
+        [device]: { ...((prev.responsiveStyles || {})[device] || {}), ...styles }
+      }
+    } : prev)
+  }, [device, send, setStyle])
+
+  const scopedValue = useCallback((prop, fallback = '') => {
+    if (device === 'desktop') return info?.styles?.[prop] || fallback
+    return info?.responsiveStyles?.[device]?.[prop] ?? info?.styles?.[prop] ?? fallback
+  }, [device, info])
 
   const setAttr = useCallback((name, value) => {
     send('he:cmd:setAttr', { name, value })
@@ -639,7 +660,7 @@ export default function PropertiesPanel({ iframeRef }) {
 
       {/* tipografia */}
       <div className="props-section">
-        <div className="props-section-title">Tipografia</div>
+        <div className="props-section-title">Tipografia ({device})</div>
         <div className="props-row">
           <span className="props-label">Cor</span>
           <ColorField
@@ -689,8 +710,8 @@ export default function PropertiesPanel({ iframeRef }) {
             type="number"
             min="8"
             max="200"
-            value={parsePx(info.styles.fontSize)}
-            onChange={(e) => setStyle({ fontSize: e.target.value + 'px' })}
+            value={parsePx(scopedValue('fontSize'))}
+            onChange={(e) => setScopedStyle({ fontSize: e.target.value + 'px' })}
           />
         </div>
         <div className="props-row">
@@ -700,15 +721,15 @@ export default function PropertiesPanel({ iframeRef }) {
             min="100"
             max="900"
             step="100"
-            value={parseInt(info.styles.fontWeight, 10) || 400}
-            onChange={(e) => setStyle({ fontWeight: e.target.value })}
+            value={parseInt(scopedValue('fontWeight'), 10) || 400}
+            onChange={(e) => setScopedStyle({ fontWeight: e.target.value })}
           />
         </div>
         <div className="props-row">
           <span className="props-label">Valor</span>
           <select
-            value={String(parseInt(info.styles.fontWeight, 10) || 400)}
-            onChange={(e) => setStyle({ fontWeight: e.target.value })}
+            value={String(parseInt(scopedValue('fontWeight'), 10) || 400)}
+            onChange={(e) => setScopedStyle({ fontWeight: e.target.value })}
           >
             {[100,200,300,400,500,600,700,800,900].map(v => (
               <option key={v} value={String(v)}>{v}</option>
@@ -719,8 +740,8 @@ export default function PropertiesPanel({ iframeRef }) {
           <span className="props-label">Linha</span>
           <input
             type="text"
-            value={info.styles.lineHeight || ''}
-            onChange={(e) => setStyle({ lineHeight: e.target.value })}
+            value={scopedValue('lineHeight') || ''}
+            onChange={(e) => setScopedStyle({ lineHeight: e.target.value })}
             placeholder="1.5 ou 24px"
           />
         </div>
@@ -735,8 +756,8 @@ export default function PropertiesPanel({ iframeRef }) {
             ].map(({ v, icon: Icon }) => (
               <button
                 key={v}
-                className={info.styles.textAlign === v ? 'active' : ''}
-                onClick={() => setStyle({ textAlign: v })}
+                className={scopedValue('textAlign') === v ? 'active' : ''}
+                onClick={() => setScopedStyle({ textAlign: v })}
               ><Icon size={13} /></button>
             ))}
           </div>
@@ -745,7 +766,7 @@ export default function PropertiesPanel({ iframeRef }) {
 
       {/* fundo */}
       <div className="props-section">
-        <div className="props-section-title">Fundo</div>
+        <div className="props-section-title">Fundo ({device})</div>
         <div className="btn-group props-mode-group">
           <button className={bgMode === 'color' ? 'active' : ''} onClick={() => setBgMode('color')}>Cor</button>
           <button className={bgMode === 'gradient' ? 'active' : ''} onClick={() => setBgMode('gradient')}>Gradiente</button>
@@ -754,15 +775,15 @@ export default function PropertiesPanel({ iframeRef }) {
           <span className="props-label">{bgMode === 'color' ? 'Cor' : 'CSS'}</span>
           {bgMode === 'color' ? (
             <ColorField
-              value={info.styles.backgroundColor}
-              onChange={(v) => setStyle({ backgroundColor: v, backgroundImage: '' })}
+              value={scopedValue('backgroundColor')}
+              onChange={(v) => setScopedStyle({ backgroundColor: v, backgroundImage: '' })}
               allowTransparent
             />
           ) : (
             <input
               type="text"
-              value={info.styles.backgroundImage || ''}
-              onChange={(e) => setStyle({ backgroundImage: e.target.value, backgroundColor: '' })}
+              value={scopedValue('backgroundImage') || ''}
+              onChange={(e) => setScopedStyle({ backgroundImage: e.target.value, backgroundColor: '' })}
               placeholder="linear-gradient(135deg, #6d71f0, #2bbf88)"
             />
           )}
@@ -781,12 +802,12 @@ export default function PropertiesPanel({ iframeRef }) {
                 'radial-gradient(circle at top, #ffffff, #e9fff5)',
                 'linear-gradient(180deg, #ffffff, #f1f5f9)'
               ].map(v => (
-                <button key={v} style={{ backgroundImage: v }} onClick={() => setStyle({ backgroundImage: v, backgroundColor: '' })} title={v} />
+                <button key={v} style={{ backgroundImage: v }} onClick={() => setScopedStyle({ backgroundImage: v, backgroundColor: '' })} title={v} />
               ))}
             </div>
           </>
         )}
-        <button className="action-btn full-width" onClick={() => setStyle({
+        <button className="action-btn full-width" onClick={() => setScopedStyle({
           background: '',
           backgroundColor: '',
           backgroundImage: ''
@@ -796,8 +817,8 @@ export default function PropertiesPanel({ iframeRef }) {
         <div className="props-row">
           <span className="props-label">Display</span>
           <select
-            value={info.styles.display || ''}
-            onChange={(e) => setStyle({ display: e.target.value })}
+            value={scopedValue('display') || ''}
+            onChange={(e) => setScopedStyle({ display: e.target.value })}
           >
             <option value="">auto</option>
             <option value="block">block</option>
@@ -807,11 +828,11 @@ export default function PropertiesPanel({ iframeRef }) {
             <option value="none">none</option>
           </select>
         </div>
-        {(info.styles.display === 'flex' || info.styles.display === 'inline-flex') && (
+        {(scopedValue('display') === 'flex' || scopedValue('display') === 'inline-flex') && (
           <>
             <div className="props-row">
               <span className="props-label">Justify</span>
-              <select value={info.styles.justifyContent || ''} onChange={(e) => setStyle({ justifyContent: e.target.value })}>
+              <select value={scopedValue('justifyContent') || ''} onChange={(e) => setScopedStyle({ justifyContent: e.target.value })}>
                 <option value="">auto</option>
                 <option value="flex-start">start</option>
                 <option value="center">center</option>
@@ -822,7 +843,7 @@ export default function PropertiesPanel({ iframeRef }) {
             </div>
             <div className="props-row">
               <span className="props-label">Align</span>
-              <select value={info.styles.alignItems || ''} onChange={(e) => setStyle({ alignItems: e.target.value })}>
+              <select value={scopedValue('alignItems') || ''} onChange={(e) => setScopedStyle({ alignItems: e.target.value })}>
                 <option value="">auto</option>
                 <option value="stretch">stretch</option>
                 <option value="flex-start">start</option>
