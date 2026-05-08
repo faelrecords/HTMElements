@@ -30,6 +30,11 @@ function parsePx(v) {
   return m ? m[1] : v
 }
 
+function rangePx(v, fallback = 48) {
+  const parsed = parseFloat(parsePx(v))
+  return Number.isFinite(parsed) ? Math.max(0, Math.min(800, parsed)) : fallback
+}
+
 function hexToRgba(hex, opacity) {
   const clean = String(hex || '#000000').replace('#', '')
   const num = parseInt(clean.length === 3 ? clean.split('').map(x => x + x).join('') : clean, 16)
@@ -665,6 +670,17 @@ export default function PropertiesPanel({ iframeRef }) {
         <div className="props-row">
           <span className="props-label">Altura</span>
           <input type="text" value={info.styles.height || ''} onChange={(e) => setStyle({ height: e.target.value })} placeholder="auto / 400px" />
+        </div>
+        <div className="props-row">
+          <span className="props-label">Slider</span>
+          <input
+            type="range"
+            min="0"
+            max="800"
+            step="1"
+            value={rangePx(info.styles.height)}
+            onChange={(e) => setStyle({ height: e.target.value + 'px' })}
+          />
         </div>
         <div className="props-row">
           <span className="props-label">Opacidade</span>
