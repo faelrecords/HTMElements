@@ -75,6 +75,7 @@ export default function PropertiesPanel({ iframeRef }) {
   const [shadowOpacity, setShadowOpacity] = useState('0.18')
   const [shadowColor, setShadowColor] = useState('#000000')
   const [animationTrigger, setAnimationTrigger] = useState('load')
+  const [codeMode, setCodeMode] = useState('html')
   const [hoverCss, setHoverCss] = useState('')
   const [focusCss, setFocusCss] = useState('')
   const [tabletCss, setTabletCss] = useState('')
@@ -860,13 +861,37 @@ export default function PropertiesPanel({ iframeRef }) {
       {/* atributos */}
       <div className="props-section">
         <div className="props-section-title">HTML</div>
+        <div className="btn-group props-mode-group">
+          <button className={codeMode === 'html' ? 'active' : ''} onClick={() => setCodeMode('html')}>HTML</button>
+          <button className={codeMode === 'css' ? 'active' : ''} onClick={() => setCodeMode('css')}>CSS</button>
+          <button className={codeMode === 'js' ? 'active' : ''} onClick={() => setCodeMode('js')}>Java</button>
+        </div>
         <div className="props-row stacked">
-          <span className="props-label">HTML + CSS + Java</span>
-          <textarea
-            className="props-textarea full-code"
-            value={info.fullCode || ''}
-            readOnly
-          />
+          <span className="props-label">{codeMode.toUpperCase()}</span>
+          {codeMode === 'html' && (
+            <textarea
+              className="props-textarea full-code"
+              value={info.fullCodeParts?.html || ''}
+              onChange={(e) => {
+                setInfo(prev => ({ ...prev, fullCodeParts: { ...(prev.fullCodeParts || {}), html: e.target.value } }))
+                send('he:cmd:setOuterHTML', { html: e.target.value })
+              }}
+            />
+          )}
+          {codeMode === 'css' && (
+            <textarea
+              className="props-textarea full-code"
+              value={info.fullCodeParts?.css || ''}
+              readOnly
+            />
+          )}
+          {codeMode === 'js' && (
+            <textarea
+              className="props-textarea full-code"
+              value={info.fullCodeParts?.js || ''}
+              readOnly
+            />
+          )}
         </div>
         <button className="action-btn full-width" onClick={() => {
           navigator.clipboard?.writeText(info.fullCode || '')

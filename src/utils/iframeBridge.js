@@ -649,6 +649,7 @@ export const IFRAME_BRIDGE_SCRIPT = `
       codepenCssAttr: el.getAttribute('data-codepen-css') || '',
       codepenJsAttr: el.getAttribute('data-codepen-js') || '',
       fullCode: buildFullCode(el),
+      fullCodeParts: buildFullCodeParts(el),
       styles: {
         color: rgbToHex(cs.color),
         backgroundColor: rgbToHex(cs.backgroundColor),
@@ -710,9 +711,11 @@ export const IFRAME_BRIDGE_SCRIPT = `
       .trim();
   }
 
-  function cleanEditorClone(node) {
+  function cleanEditorClone(node, classMap = null) {
     const all = node.nodeType === 1 ? [node, ...Array.from(node.querySelectorAll?.('*') || [])] : Array.from(node.querySelectorAll?.('*') || []);
     all.forEach(el => {
+      const heId = el.getAttribute('data-he-id');
+      if (classMap && heId && classMap.has(heId)) el.classList.add(classMap.get(heId));
       el.removeAttribute('data-he-id');
       el.removeAttribute('data-he-hover');
       el.removeAttribute('data-he-selected');
@@ -736,7 +739,7 @@ export const IFRAME_BRIDGE_SCRIPT = `
     }
   }
 
-  function collectRelatedCss(el) {
+  function collectRelatedCss(el, classMap = null) {
     const ids = new Set(Array.from(el.querySelectorAll('[data-he-id]')).map(n => n.getAttribute('data-he-id')));
     if (el.hasAttribute('data-he-id')) ids.add(el.getAttribute('data-he-id'));
     const styles = [];
@@ -745,7 +748,11 @@ export const IFRAME_BRIDGE_SCRIPT = `
       if (styleEl.id === 'he-global-css' || styleEl.id === 'he-color-vars') styles.push(styleEl.textContent || '');
       if (styleEl.id?.startsWith('he-pseudo-') || styleEl.id?.startsWith('he-responsive-')) {
         const id = styleEl.id.replace(/^he-(pseudo|responsive)-/, '');
-        if (ids.has(id)) styles.push(styleEl.textContent || '');
+        if (ids.has(id)) {
+          let css = styleEl.textContent || '';
+          if (classMap && classMap.has(id)) css = css.replaceAll('[data-he-id="' + id + '"]', '.' + classMap.get(id));
+          styles.push(css);
+        }
       }
     });
     const animNames = new Set();
@@ -787,14 +794,29 @@ export const IFRAME_BRIDGE_SCRIPT = `
     return el.closest('section, header, footer, main, article, aside, nav') || el;
   }
 
-  function buildFullCode(el) {
+  function buildClassMap(el) {
+    const map = new Map();
+    [el, ...Array.from(el.querySelectorAll('*'))].forEach((node, index) => {
+      const id = node.getAttribute('data-he-id');
+      if (id) map.set(id, 'he-copy-' + index.toString(36));
+    });
+    return map;
+  }
+
+  function buildFullCodeParts(el) {
+    const classMap = buildClassMap(el);
     const htmlClone = el.cloneNode(true);
-    cleanEditorClone(htmlClone);
-    const css = collectRelatedCss(el);
+    cleanEditorClone(htmlClone, classMap);
+    const css = collectRelatedCss(el, classMap);
     const js = collectRelatedJs(el);
-    return '<!-- HTML -->\\n' + htmlClone.outerHTML +
-      (css ? '\\n\\n<!-- CSS -->\\n<style>\\n' + css + '\\n</style>' : '') +
-      (js ? '\\n\\n<!-- JS -->\\n<script>\\n' + js + '\\n<\\/script>' : '');
+    return { html: htmlClone.outerHTML, css, js };
+  }
+
+  function buildFullCode(el) {
+    const parts = buildFullCodeParts(el);
+    return '<!-- HTML -->\\n' + parts.html +
+      (parts.css ? '\\n\\n<!-- CSS -->\\n<style>\\n' + parts.css + '\\n</style>' : '') +
+      (parts.js ? '\\n\\n<!-- JS -->\\n<script>\\n' + parts.js + '\\n<\\/script>' : '');
   }
 
   function postChange(el) {
@@ -955,6 +977,19 @@ export const IFRAME_BRIDGE_SCRIPT = `
         el.innerHTML = msg.html;
         tagAll(el);
         postChange(el);
+      }
+    }
+    if (msg.type === 'he:cmd:setOuterHTML') {
+      const el = getEl(msg.id);
+      if (el && el !== document.body) {
+        const wrap = document.createElement('div');
+        wrap.innerHTML = msg.html || '';
+        const node = wrap.firstElementChild;
+        if (!node) return;
+        el.replaceWith(node);
+        tagAll(document.body);
+        markSelected(node);
+        postChange(node);
       }
     }
     if (msg.type === 'he:cmd:setStyle') {
